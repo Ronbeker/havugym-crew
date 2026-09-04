@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { serverEnv } from '@/lib/env';
+import type { Database } from '@/lib/database.types';
 
 /**
  * Service-role client. Bypasses Row Level Security entirely.
@@ -18,7 +19,7 @@ export function createAdminClient() {
     throw new Error('createAdminClient() was called in the browser — the service-role key must never leave the server.');
   }
   const env = serverEnv();
-  return createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+  return createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
