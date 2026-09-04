@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "db:push": "supabase db push",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "db:verify": "node scripts/verify-db.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
@@ -30,6 +31,7 @@
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.6",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.1.1",
@@ -37,6 +39,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "jsdom": "^29.1.1",
+    "pg": "^8.23.0",
     "supabase": "^2.116.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
