@@ -1,0 +1,479 @@
+<title>HavuGym Crew Presentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+  /*
+     Deliberately single-theme: this is projected in a lecture room.
+     Every colour is painted explicitly so it holds on any host ground.
+  */
+  :root {
+    --ink:      #0b0c0e;
+    --ink-2:    #141519;
+    --line:     #26282e;
+    --text:     #f3f3f1;
+    --muted:    #9598a1;
+    --accent:   #c9f24d;
+    --accent-d: #1a1f0c;
+    --warn:     #f0a13c;
+    --good:     #6ee08a;
+    --sans: "Heebo", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ink);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+  }
+
+  .deck { position: relative; width: 100%; height: 100dvh; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(28px, 5vw, 72px) clamp(28px, 6vw, 96px) 84px;
+    direction: rtl;
+  }
+  .slide.on { display: flex; }
+
+  .eyebrow {
+    font-size: clamp(12px, 1.3vw, 15px);
+    font-weight: 700;
+    letter-spacing: .14em;
+    color: var(--accent);
+    margin: 0 0 clamp(10px, 1.6vw, 20px);
+  }
+
+  h1 {
+    font-size: clamp(38px, 7.4vw, 92px);
+    font-weight: 900;
+    line-height: 1.02;
+    letter-spacing: -.02em;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+  h2 {
+    font-size: clamp(28px, 4.6vw, 58px);
+    font-weight: 700;
+    line-height: 1.12;
+    margin: 0 0 clamp(14px, 2vw, 26px);
+    text-wrap: balance;
+  }
+  .sub {
+    font-size: clamp(17px, 2.05vw, 26px);
+    font-weight: 300;
+    color: var(--muted);
+    line-height: 1.5;
+    max-width: 26ch;
+    margin: 0;
+  }
+  .wide-sub { max-width: 42ch; }
+
+  ul { margin: 0; padding: 0; list-style: none; }
+  li.pt {
+    font-size: clamp(17px, 2.15vw, 27px);
+    font-weight: 300;
+    line-height: 1.45;
+    padding: clamp(9px, 1.2vw, 15px) 0;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    align-items: baseline;
+  }
+  li.pt:last-child { border-bottom: 0; }
+  li.pt b { font-weight: 700; color: var(--text); }
+  li.pt .mark {
+    font-family: var(--mono);
+    font-size: .62em;
+    color: var(--accent);
+    direction: ltr;
+  }
+
+  .cols { display: grid; gap: clamp(18px, 2.6vw, 38px); }
+  @media (min-width: 760px) { .cols.two { grid-template-columns: 1fr 1fr; } }
+
+  .panel {
+    background: var(--ink-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: clamp(16px, 2.1vw, 26px);
+  }
+  .panel h3 {
+    font-size: clamp(13px, 1.4vw, 16px);
+    font-weight: 700;
+    letter-spacing: .1em;
+    color: var(--accent);
+    margin: 0 0 12px;
+  }
+  .panel p { margin: 0; font-size: clamp(15px, 1.75vw, 21px); font-weight: 300; color: var(--muted); line-height: 1.5; }
+  .panel p b { color: var(--text); font-weight: 700; }
+
+  pre {
+    direction: ltr;
+    text-align: left;
+    font-family: var(--mono);
+    font-size: clamp(11px, 1.32vw, 17px);
+    line-height: 1.75;
+    background: var(--ink-2);
+    border: 1px solid var(--line);
+    border-right: 3px solid var(--accent);
+    padding: clamp(14px, 1.8vw, 24px);
+    margin: 0;
+    overflow-x: auto;
+    color: var(--text);
+  }
+  pre b { color: var(--accent); font-weight: 600; }
+  pre i { color: var(--muted); font-style: normal; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: clamp(22px, 4vw, 64px); margin-top: clamp(16px, 2.4vw, 34px); }
+  .stat .n {
+    font-family: var(--mono);
+    font-size: clamp(30px, 5.4vw, 68px);
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+  }
+  .stat .l { font-size: clamp(12px, 1.4vw, 17px); color: var(--muted); margin-top: 8px; font-weight: 300; }
+
+  .quote {
+    font-size: clamp(20px, 3.1vw, 40px);
+    font-weight: 300;
+    line-height: 1.32;
+    max-width: 20ch;
+    margin: 0;
+  }
+  .quote b { font-weight: 700; color: var(--accent); }
+
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: clamp(11px, 1.2vw, 14px);
+    color: var(--accent);
+    background: var(--accent-d);
+    border: 1px solid var(--accent);
+    border-radius: 100px;
+    padding: 4px 14px;
+    direction: ltr;
+  }
+
+  /* chrome */
+  .chrome {
+    position: fixed;
+    inset: auto 0 0 0;
+    height: 62px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 clamp(20px, 4vw, 46px);
+    border-top: 1px solid var(--line);
+    background: var(--ink);
+    direction: ltr;
+  }
+  .chrome .who { font-size: 13px; color: var(--muted); font-weight: 300; }
+  .chrome .nav { display: flex; align-items: center; gap: 14px; }
+  .chrome button {
+    background: var(--ink-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    width: 34px; height: 30px;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: var(--mono);
+  }
+  .chrome button:hover { border-color: var(--accent); color: var(--accent); }
+  .chrome .count { font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 54px; text-align: center; }
+
+  .bar { position: fixed; left: 0; bottom: 62px; height: 2px; background: var(--accent); transition: width .22s ease; }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { .bar { transition: none; } }
+</style>
+
+<div class="deck" id="deck">
+
+  <!-- 1 -->
+  <section class="slide on">
+    <p class="eyebrow">Internet Technologies &middot; RUNI CS 2026</p>
+    <h1>HavuGym Crew</h1>
+    <p class="sub wide-sub">יומן אימונים משותף לחבורת חברים — עם ציון, אתגר שבועי, תחרות וכלכלה פנימית.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">14</div><div class="l">טבלאות</div></div>
+      <div class="stat"><div class="n">20</div><div class="l">RLS policies</div></div>
+      <div class="stat"><div class="n">118</div><div class="l">בדיקות</div></div>
+      <div class="stat"><div class="n">660</div><div class="l">תרגילים בקטלוג</div></div>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide">
+    <p class="eyebrow">הבעיה</p>
+    <h2 class="quote">אנשים לא מפסיקים להתאמן כי הם לא יודעים איך.<br>הם מפסיקים כי <b>אף אחד לא שם לב שהם הפסיקו.</b></h2>
+    <p class="sub" style="margin-top:26px">
+      זו לא סיסמה — זו תובנה מהפעלת מערכת אמיתית בפרודקשן: בוט WhatsApp ואפליקציית iOS שמשרתים קבוצת מתאמנים פעילה.
+    </p>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide">
+    <p class="eyebrow">למה האפליקציות הקיימות לא פותרות את זה</p>
+    <h2>הן פותרות תיעוד. לא חזרה.</h2>
+    <ul>
+      <li class="pt"><span class="mark">01</span><span><b>אין אחריות הדדית</b> — מחיקה עצמית היא שקטה. אף אחד לא רואה שנעלמת.</span></li>
+      <li class="pt"><span class="mark">02</span><span><b>השוואה לא הוגנת</b> — טבלה שמודדת קילוגרמים היא טבלה שהמתחיל מפסיד בה מראש.</span></li>
+      <li class="pt"><span class="mark">03</span><span><b>אין קצב שבועי</b> — "להתאמן יותר" הוא יעד בלי סוף ובלי משוב.</span></li>
+    </ul>
+  </section>
+
+  <!-- 4 -->
+  <section class="slide">
+    <p class="eyebrow">משתמשים מול לקוח</p>
+    <h2>מי משתמש, ומי משלם — שני אנשים שונים</h2>
+    <div class="cols two">
+      <div class="panel">
+        <h3>המשתמשים</h3>
+        <p>חברי חבורה של 3&ndash;10, שמכירים זה את זה <b>מחוץ לאפליקציה</b>. המוצר לא מנסה להכיר בין זרים — הוא מניח קבוצה קיימת.</p>
+      </div>
+      <div class="panel">
+        <h3>הלקוח המשלם</h3>
+        <p><b>העוגן</b> — המתאמן המושקע ביותר, זה שפתח את החבורה. <b>המתנדנד לעולם לא ישלם</b>, וגם לא צריך: הוא ה-retention שמצדיק את התשלום של העוגן.</p>
+      </div>
+    </div>
+    <p class="sub wide-sub" style="margin-top:26px">המוצר מונטז את המשתמש החזק ומשתמש בכסף שלו כדי לשרת את החלש.</p>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide">
+    <p class="eyebrow">ההחלטה שמחזיקה את המוצר</p>
+    <h2 class="quote">כסף אמיתי קונה <b>תואר</b>.<br>הוא לא קונה <b>דירוג</b>.</h2>
+    <p class="sub wide-sub" style="margin-top:24px">
+      הכול בחנות קוסמטי. זה לא זהירות — זה הכרח: ברגע שאפשר לקנות מקום בפודיום, הדירוג מפסיק להיות אמין, וברגע שהדירוג לא אמין אין מוצר.
+    </p>
+    <div style="margin-top:26px"><span class="tag">shop_items.kind = title | badge | theme</span></div>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide">
+    <p class="eyebrow">ארכיטקטורה</p>
+    <h2>שלוש שכבות — וההרשאות בתחתונה</h2>
+    <pre>Browser     RSC HTML + מעט Client Components
+            מחזיק publishable key בלבד — <i>ללא סמכות משלו</i>
+
+Vercel      middleware · RSC (קריאות) · Server Actions (כתיבות)
+fra1        שני route handlers בלבד: health, stripe/webhook
+
+Supabase    PostgreSQL · 14 טבלאות · 20 policies · 13 functions
+Frankfurt   <b>שכבת ההרשאות חיה כאן, לא מעליה</b></pre>
+    <p class="sub wide-sub" style="margin-top:22px">
+      Vercel פותח פרויקטים ב-<span class="tag">iad1</span> ; המסד בפרנקפורט. שורת קונפיגורציה אחת חסכה חציית אוקיינוס בכל שאילתה.
+    </p>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide">
+    <p class="eyebrow">התוצאה של ההחלטה הזו</p>
+    <h2 class="quote">שאילתה ששכחו בה סינון מחזירה <b>אפס שורות</b> — לא את כולן.</h2>
+    <p class="sub wide-sub" style="margin-top:26px">
+      אותה טעות בדיוק: פרצת אבטחה במערכת רגילה, באג ריק כאן. זו כל הסיבה שבחרנו Supabase ולא Postgres גולמי — RLS ו-Auth באותו מקום.
+    </p>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide">
+    <p class="eyebrow">מסד הנתונים</p>
+    <h2>ארבע החלטות שאני מגן עליהן</h2>
+    <ul>
+      <li class="pt"><span class="mark">A</span><span><b>המטבע הוא ledger, לא מספר.</b> היתרה היא cache; ה-ledger הוא האמת, עם balance_after בכל שורה.</span></li>
+      <li class="pt"><span class="mark">B</span><span><b>Idempotency היא אינדקס, לא קוד.</b> webhook כפול, כפתור כפול וסגירה חוזרת — כולם מתנגשים באינדקס ומפסידים.</span></li>
+      <li class="pt"><span class="mark">C</span><span><b>FK מורכב אוכף כלל עסקי.</b> "פריט מצויד אחד מכל סוג" נאכף על ידי המסד, לא על ידי הקוד.</span></li>
+      <li class="pt"><span class="mark">D</span><span><b>Views עם security_invoker.</b> בלעדיו view עוקף RLS על כל טבלה שמתחתיו.</span></li>
+    </ul>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide">
+    <p class="eyebrow">הליבה הטכנית</p>
+    <h2>הציון נמדד מולך, לא מול הברזל</h2>
+    <pre>work = reps × (weight + <b>proxy</b>)     <i>proxy = 30kg לתרגילי משקל גוף</i>
+
+<b>Load</b>     0–50 : 25 × min(volume  ÷ median(volume),  2)
+<b>Density</b>  0–30 : 15 × min(density ÷ median(density), 2)
+<b>Coverage</b> 0–20 : 4 לכל שריר ראשי שונה, עד 20
+
+<i>החציונים על 8 האימונים הקודמים של אותו מתאמן</i></pre>
+    <p class="sub wide-sub" style="margin-top:22px">
+      יום רגיל ≈ 50 לכל אחד. יום קשה ≈ 90 לכל אחד. <b style="color:var(--text)">זה מה שהופך תחרות קבוצתית לאפשרית בכלל.</b>
+    </p>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide">
+    <p class="eyebrow">הנוסחה קיימת פעמיים — ובכוונה</p>
+    <div class="cols two">
+      <div class="panel">
+        <h3>plpgsql — סמכותי</h3>
+        <p>המסד מחשב בתוך אותה טרנזקציה שבה נשמרים הסטים. הציון <b>לעולם לא מתקבל מהלקוח</b>, ולכן אי אפשר לתת לעצמך 100.</p>
+      </div>
+      <div class="panel">
+        <h3>TypeScript — תצוגה</h3>
+        <p>מציג ציון חזוי <b>לפני</b> השמירה, ומאפשר בדיקות יחידה — דבר ש-plpgsql לא מאפשר.</p>
+      </div>
+    </div>
+    <p class="sub wide-sub" style="margin-top:26px">
+      שכפול הוא המחיר; drift הוא הסיכון. <b style="color:var(--text)">בדיקת parity על 7 מקרים מול המסד האמיתי</b> מצמידה את השתיים. בלעדיה, עריכה של אחת ולא של השנייה עוברת בשקט.
+    </p>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide">
+    <p class="eyebrow">אבטחה &middot; שלוש שכבות בלתי תלויות</p>
+    <h2>הפרצה שנסגרה בגלל שכבה שנייה</h2>
+    <pre>0002  revoke all on all tables ... from anon      <i>← חל רק על מה שקיים עכשיו</i>
+0006  create view workout_feed                    <i>← נוצר מאוחר יותר</i>
+      → default privileges החזירו הרשאה ל-anon
+
+<b>אבל:</b> security_invoker בדק את הרשאות הקורא על workouts
+GET /rest/v1/workout_feed (anon) → <b>401  permission denied</b></pre>
+    <p class="sub wide-sub" style="margin-top:22px">
+      שתי בקרות בלתי תלויות. אחת הייתה שגויה. <b style="color:var(--good)">השנייה החזיקה.</b> זו כל התועלת של defence in depth — ולכן היא מתועדת ולא תוקנה בשקט.
+    </p>
+  </section>
+
+  <!-- 12 -->
+  <section class="slide">
+    <p class="eyebrow">אבטחה &middot; ההרשאה שנסגרה</p>
+    <h2 class="quote">מותר לתקן מה שרשמת.<br><b>אסור לתת לעצמך ציון.</b></h2>
+    <pre style="margin-top:26px"><i>-- היה עובר:</i>
+UPDATE workouts SET score = 100 WHERE id = &lt;שלי&gt;;
+
+<i>-- התיקון אינו policy טובה יותר, אלא הרשאה צרה יותר:</i>
+<b>grant update</b> (title, notes, performed_at, duration_min)
+  on workouts to authenticated;</pre>
+  </section>
+
+  <!-- 13 -->
+  <section class="slide">
+    <p class="eyebrow">בדיקות</p>
+    <h2>כל בדיקת הרשאה כתובה כתקיפה</h2>
+    <div class="stats">
+      <div class="stat"><div class="n">77</div><div class="l">unit — לוגיקה טהורה, ללא I/O</div></div>
+      <div class="stat"><div class="n">35</div><div class="l">integration — מול המסד האמיתי</div></div>
+      <div class="stat"><div class="n">6</div><div class="l">E2E — מול הפריסה החיה</div></div>
+    </div>
+    <p class="sub wide-sub" style="margin-top:30px">
+      לא מוקקנו את ה-client. mock היה מוכיח שה-mock שלנו מסרב. הטענה שצריך להוכיח היא ש-<b style="color:var(--text)">Postgres</b> מסרב — עם policies אמיתיים, JWT אמיתי ומשתמשים אמיתיים.
+    </p>
+  </section>
+
+  <!-- 14 -->
+  <section class="slide">
+    <p class="eyebrow">סקייל &middot; נמדד, לא הוערך</p>
+    <h2>הבעיה שרק EXPLAIN גילתה</h2>
+    <pre>Sort (rows=21)
+  └─ GroupAggregate (rows=35)   <i>← כל אימוני החבורה, כדי להחזיר 20</i>
+
+Execution Time: <b>10.5 ms</b></pre>
+    <p class="sub wide-sub" style="margin-top:22px">
+      ה-<span class="tag">LIMIT</span> לא נדחף מתחת ל-GROUP BY. עומס <b style="color:var(--warn)">ליניארי בהיסטוריית החבורה</b> על הפעולה הנפוצה ביותר במוצר.
+    </p>
+    <p class="sub wide-sub" style="margin-top:16px">
+      התיקון ידוע — דנורמליזציה בזמן הכתיבה. <b style="color:var(--text)">לא בוצע במכוון:</b> הנתונים לא מצדיקים מיגרציה. נמדד, מתועד, עם תאריך תפוגה.
+    </p>
+  </section>
+
+  <!-- 15 -->
+  <section class="slide">
+    <p class="eyebrow">מה מצאנו בדרך</p>
+    <h2>חמישה באגים אמיתיים</h2>
+    <ul>
+      <li class="pt"><span class="mark">01</span><span><code style="font-family:var(--mono);font-size:.8em">rpad(name,2,'.')</code> קיצץ כל שם לשני תווים — "Dana" נשמר כ-"Da"</span></li>
+      <li class="pt"><span class="mark">02</span><span>שבועות שאיש לא פתח בהם את האפליקציה מעולם לא נסגרו ולא שולמו</span></li>
+      <li class="pt"><span class="mark">03</span><span><b>היתרה נקראה 0</b> כי <code style="font-family:var(--mono);font-size:.8em">.single()</code> החזיר ארבע שורות — חברי החבורה</span></li>
+      <li class="pt"><span class="mark">04</span><span>חישוב היסט אזור זמן שגוי בפונקציה שלא הייתה בשימוש</span></li>
+      <li class="pt"><span class="mark">05</span><span>ה-views קיבלו הרשאה ל-<code style="font-family:var(--mono);font-size:.8em">anon</code></span></li>
+    </ul>
+    <p class="sub wide-sub" style="margin-top:22px">
+      <b style="color:var(--text)">RLS מצמצם את מה שמותר לראות. הוא לא מחליט איזו שורה התכוונת אליה.</b>
+    </p>
+  </section>
+
+  <!-- 16 -->
+  <section class="slide">
+    <p class="eyebrow">מה הייתי עושה בשבוע נוסף</p>
+    <h2>לפי סדר</h2>
+    <ul>
+      <li class="pt"><span class="mark">01</span><span>דנורמליזציה של סיכומי ה-feed — הבעיה משקף 14</span></li>
+      <li class="pt"><span class="mark">02</span><span>העברת סגירת השבוע ל-<code style="font-family:var(--mono);font-size:.8em">pg_cron</code> במקום סגירה עצלה בטעינת דף</span></li>
+      <li class="pt"><span class="mark">03</span><span>מתאם Hevy מול ה-API הרשמי — הגבול והאינדקס כבר קיימים</span></li>
+      <li class="pt"><span class="mark">04</span><span>Rate limiting מפורש משלנו</span></li>
+      <li class="pt"><span class="mark">05</span><span>איסוף משקל גוף, כדי לוותר על ה-proxy של 30 ק"ג</span></li>
+    </ul>
+  </section>
+
+  <!-- 17 -->
+  <section class="slide">
+    <p class="eyebrow">הדגמה</p>
+    <h1 style="font-size:clamp(30px,5.2vw,64px)">havugym-crew.vercel.app</h1>
+    <p class="sub wide-sub" style="margin-top:18px">
+      התחברות · חבורה · רישום אימון עם ציון חזוי · Feed · אתגר ותחרות · חנות · ארנק
+    </p>
+    <div class="stats" style="margin-top:34px">
+      <div class="stat"><div class="n">fra1</div><div class="l">functions ליד המסד</div></div>
+      <div class="stat"><div class="n">401</div><div class="l">anon על כל טבלה</div></div>
+      <div class="stat"><div class="n">100</div><div class="l">תקרת הציון</div></div>
+    </div>
+  </section>
+
+</div>
+
+<div class="bar" id="bar"></div>
+<div class="chrome">
+  <span class="who">HavuGym Crew &middot; Internet Technologies &middot; RUNI CS 2026</span>
+  <div class="nav">
+    <button id="prev" aria-label="Previous slide">&larr;</button>
+    <span class="count" id="count">1 / 17</span>
+    <button id="next" aria-label="Next slide">&rarr;</button>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var bar = document.getElementById('bar');
+    var count = document.getElementById('count');
+    var i = 0;
+
+    function show(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+      bar.style.width = ((i + 1) / slides.length * 100) + '%';
+      count.textContent = (i + 1) + ' / ' + slides.length;
+      try { location.hash = String(i + 1); } catch (e) {}
+    }
+
+    document.getElementById('next').addEventListener('click', function () { show(i + 1); });
+    document.getElementById('prev').addEventListener('click', function () { show(i - 1); });
+
+    document.addEventListener('keydown', function (e) {
+      // RTL content, LTR mental model: both arrow directions advance sensibly.
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+      else if (e.key === 'Home') { show(0); }
+      else if (e.key === 'End') { show(slides.length - 1); }
+    });
+
+    var start = parseInt((location.hash || '').replace('#', ''), 10);
+    show(isNaN(start) ? 0 : start - 1);
+  })();
+</script>

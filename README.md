@@ -137,12 +137,17 @@ The graded documents live in [`docs/`](./docs):
 | 6 | מסמך אפיון בדיקות | [`docs/03-test-spec.md`](./docs/03-test-spec.md) |
 | 8 | סקייל בסיסי | [`docs/04-scale.md`](./docs/04-scale.md) |
 | 9 | אבטחה בסיסית | [`docs/05-security.md`](./docs/05-security.md) |
+| 11 | Internal technical reference | [`docs/explainer.html`](./docs/explainer.html) · [published](https://claude.ai/code/artifact/10857557-e5ce-4a9b-9bbd-cf8cb4e50823) |
+| 12 | מצגת (10–15 דקות) | [`docs/presentation.html`](./docs/presentation.html) · [published](https://claude.ai/code/artifact/d62d286c-978f-4a23-84f3-5a4da66fb3f0) |
+
+Both HTML documents open in any browser. The presentation is keyboard-driven —
+arrow keys or space to advance, `Home` / `End` to jump.
 
 ## Tests
 
 ```bash
 npm test                 # 77 unit — pure domain logic, offline
-npm run test:integration # 29 against the real database, incl. 22 RLS attacks
+npm run test:integration # 35 against the real database, incl. 22 RLS attacks
 npm run test:e2e         #  6 end-to-end against the live deployment
 npm run db:verify        # 12 schema invariants the security doc claims
 ```
