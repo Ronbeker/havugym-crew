@@ -7,7 +7,7 @@ import {
 import { challengeForWeek } from '@/lib/domain/challenge';
 import { settleCompetition, type CompetitionEntry } from '@/lib/domain/competition';
 import { weekStartOf, weekEndOf } from '@/lib/domain/time';
-import { ensureWeek, settleDueWeeks, metricForWeek, COMPETITION_POT } from '@/lib/services/week';
+import { ensureActivityWeeks, settleDueWeeks, metricForWeek, COMPETITION_POT } from '@/lib/services/week';
 import { compactNumber, formatDay } from '@/lib/format';
 
 export const metadata = { title: 'Crew · HavuGym Crew' };
@@ -24,10 +24,12 @@ export default async function CrewPage() {
 
   const weekStart = weekStartOf(new Date());
 
-  // Lazy settlement: opening this page closes out any finished week that nobody
-  // has settled yet. Both calls are idempotent — see src/lib/services/week.ts.
+  // Lazy reconciliation: opening this page creates any missing week (including
+  // past weeks the crew trained in but never opened the app during) and then
+  // settles every finished one. Both calls are idempotent — see
+  // src/lib/services/week.ts. Order matters: a week cannot settle before it exists.
+  await ensureActivityWeeks(havura.id);
   await settleDueWeeks(havura.id);
-  await ensureWeek(havura.id, weekStart);
 
   const [roster, stats] = await Promise.all([
     getCrewRoster(havura.id),

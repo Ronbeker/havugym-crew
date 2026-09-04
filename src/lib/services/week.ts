@@ -43,52 +43,62 @@ export function metricForWeek(weekStart: string): CompetitionMetric {
  * page at the same moment cannot create two competitions: the second insert
  * loses the race and is ignored.
  */
-export async function ensureWeek(havuraId: string, weekStart: string) {
+export async function ensureWeeks(havuraId: string, weekStarts: readonly string[]) {
+  if (weekStarts.length === 0) return;
   const admin = createAdminClient();
-  const definition = challengeForWeek(weekStart);
 
+  // One round trip each, not one per week. A crew that has been running for a
+  // year has 52 weeks to reconcile and this page is on the hot path.
   await Promise.all([
-    admin
-      .from('challenges')
-      .upsert(
-        {
+    admin.from('challenges').upsert(
+      weekStarts.map((weekStart) => {
+        const definition = challengeForWeek(weekStart);
+        return {
           havura_id: havuraId,
           week_start: weekStart,
           kind: definition.kind,
           target: definition.target,
           reward_creatine: definition.rewardCreatine,
-        },
-        { onConflict: 'havura_id,week_start', ignoreDuplicates: true },
-      ),
-    admin
-      .from('competitions')
-      .upsert(
-        {
-          havura_id: havuraId,
-          week_start: weekStart,
-          metric: metricForWeek(weekStart),
-          pot_creatine: COMPETITION_POT,
-        },
-        { onConflict: 'havura_id,week_start', ignoreDuplicates: true },
-      ),
+        };
+      }),
+      { onConflict: 'havura_id,week_start', ignoreDuplicates: true },
+    ),
+    admin.from('competitions').upsert(
+      weekStarts.map((weekStart) => ({
+        havura_id: havuraId,
+        week_start: weekStart,
+        metric: metricForWeek(weekStart),
+        pot_creatine: COMPETITION_POT,
+      })),
+      { onConflict: 'havura_id,week_start', ignoreDuplicates: true },
+    ),
   ]);
+}
 
-  const [{ data: challenge }, { data: competition }] = await Promise.all([
-    admin
-      .from('challenges')
-      .select('*')
-      .eq('havura_id', havuraId)
-      .eq('week_start', weekStart)
-      .single(),
-    admin
-      .from('competitions')
-      .select('*')
-      .eq('havura_id', havuraId)
-      .eq('week_start', weekStart)
-      .single(),
-  ]);
+/**
+ * Ensures a challenge and a competition exist for the current week AND for every
+ * past week the crew actually trained in.
+ *
+ * The past-weeks half is not housekeeping. Creating only the current week means
+ * a week in which nobody opened the app never gets a competition row, so it can
+ * never be settled and the training done in it is never paid — the crew is
+ * punished for not checking their phone. Deriving the weeks from the sessions
+ * themselves makes the record depend on training, which is the only thing it
+ * should depend on.
+ */
+export async function ensureActivityWeeks(havuraId: string, now = new Date()) {
+  const admin = createAdminClient();
 
-  return { challenge, competition };
+  const { data } = await admin
+    .from('weekly_user_stats')
+    .select('week_start')
+    .eq('havura_id', havuraId);
+
+  const weeks = new Set<string>((data ?? []).map((row) => row.week_start!).filter(Boolean));
+  weeks.add(weekStartOf(now));
+
+  await ensureWeeks(havuraId, [...weeks].sort());
+  return weeks.size;
 }
 
 function metricValue(
