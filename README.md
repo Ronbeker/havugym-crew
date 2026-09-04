@@ -8,7 +8,22 @@ veteran's hard session land on the same scale. Every week the crew gets a
 cooperative challenge and a competitive ranking, both of which pay out in
 **creatine** — the in-app currency, which you can also buy with real money.
 
+**Live:** <https://havugym-crew.vercel.app>
+
 Built for *Internet Technologies*, RUNI CS 2026.
+
+### Try it
+
+A demo crew with three weeks of history is seeded. Sign in as any member:
+
+| Email | Password |
+|---|---|
+| `dana@havugym-demo.com` | `DemoCrew2026!` |
+| `itay@havugym-demo.com` | `DemoCrew2026!` |
+| `maya@havugym-demo.com` | `DemoCrew2026!` |
+| `noam@havugym-demo.com` | `DemoCrew2026!` |
+
+Or join their crew with invite code **`DEMO01`**.
 
 ---
 
@@ -115,10 +130,19 @@ npm run test:e2e    # Playwright — end-to-end
 
 The graded documents live in [`docs/`](./docs):
 
-| Document | File |
-|---|---|
-| מסמך אפיון מוצר | `docs/01-product-spec.md` |
-| ארכיטקטורה ותכנון טכני | `docs/02-technical-design.md` |
-| מסמך אפיון בדיקות | `docs/03-test-spec.md` |
-| סקייל בסיסי | `docs/04-scale.md` |
-| אבטחה בסיסית | `docs/05-security.md` |
+| § | Document | File |
+|---|---|---|
+| 2 | מסמך אפיון מוצר | [`docs/01-product-spec.md`](./docs/01-product-spec.md) |
+| 3–4 | ארכיטקטורה ותכנון טכני | [`docs/02-technical-design.md`](./docs/02-technical-design.md) |
+| 6 | מסמך אפיון בדיקות | [`docs/03-test-spec.md`](./docs/03-test-spec.md) |
+| 8 | סקייל בסיסי | [`docs/04-scale.md`](./docs/04-scale.md) |
+| 9 | אבטחה בסיסית | [`docs/05-security.md`](./docs/05-security.md) |
+
+## Tests
+
+```bash
+npm test                 # 77 unit — pure domain logic, offline
+npm run test:integration # 29 against the real database, incl. 22 RLS attacks
+npm run test:e2e         #  6 end-to-end against the live deployment
+npm run db:verify        # 12 schema invariants the security doc claims
+```
