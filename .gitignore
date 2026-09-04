@@ -43,3 +43,6 @@ next-env.d.ts
 # keep the template, never the real values
 !.env.example
 .env.vercel
+
+test-results/
+playwright-report/

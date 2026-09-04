@@ -65,18 +65,3 @@ export function weekEndOf(weekStart: string): string {
   const end = new Date(Date.UTC(y, m - 1, d, 12) + 6 * 86_400_000);
   return iso(end.getUTCFullYear(), end.getUTCMonth() + 1, end.getUTCDate());
 }
-
-/** Inclusive UTC instant range covering a local week — for querying timestamptz. */
-export function weekRangeUtc(weekStart: string, timeZone: string = GYM_TIMEZONE) {
-  const [y, m, d] = weekStart.split('-').map(Number);
-
-  // Find the UTC instant of local midnight by probing the offset on that date.
-  const probe = new Date(Date.UTC(y, m - 1, d, 12));
-  const localMidday = localParts(probe, timeZone);
-  const offsetMs =
-    Date.UTC(localMidday.year, localMidday.month - 1, localMidday.day, 12) - probe.getTime();
-
-  const startUtc = new Date(Date.UTC(y, m - 1, d) - offsetMs);
-  const endUtc = new Date(startUtc.getTime() + 7 * 86_400_000);
-  return { startUtc, endUtc };
-}
