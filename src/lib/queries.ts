@@ -172,13 +172,26 @@ export async function getCrewRoster(havuraId: string) {
 
 export async function getWallet(limit = 15) {
   const supabase = await createSupabaseServerClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { balance: 0, ledger: [] as LedgerRow[] };
+
+  // The .eq('id', ...) is required, not defensive.
+  //
+  // profiles_select_self_or_crewmate deliberately exposes crewmates' profiles so
+  // the feed can render names. That makes an unfiltered select return one row
+  // PER CREW MEMBER, .single() fail, and the balance silently read as 0 — which
+  // presented as every shop item being unaffordable. RLS narrows what you may
+  // see; it does not choose which row you meant.
   const [{ data: profile }, { data: ledger }] = await Promise.all([
-    supabase.from('profiles').select('creatine_balance').single(),
-    supabase
-      .from('creatine_ledger')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(limit),
+    supabase.from('profiles').select('creatine_balance').eq('id', auth.user.id).single(),
+    limit > 0
+      ? supabase
+          .from('creatine_ledger')
+          .select('*')
+          .eq('user_id', auth.user.id)
+          .order('created_at', { ascending: false })
+          .limit(limit)
+      : Promise.resolve({ data: [] as LedgerRow[] }),
   ]);
 
   return {
