@@ -17,12 +17,15 @@ Everything required for the submission is indexed in **[SUBMISSION.md](./SUBMISS
 
 A demo crew with three weeks of history is seeded. Sign in as any member:
 
-| Email | Password |
-|---|---|
-| `dana@havugym-demo.com` | `DemoCrew2026!` |
-| `itay@havugym-demo.com` | `DemoCrew2026!` |
-| `maya@havugym-demo.com` | `DemoCrew2026!` |
-| `noam@havugym-demo.com` | `DemoCrew2026!` |
+Eleven members, six weeks, 174 sessions. Any of these, all with password
+`DemoCrew2026!`:
+
+`dana@` · `itay@` · `maya@` · `noam@` · `shira@` · `omer@` · `tamar@` ·
+`yonatan@` · `roni@` · `alon@` · `gil@` — all `@havugym-demo.com`
+
+`dana@` owns the crew. `roni@` and `alon@` train identically, so they tie every
+week and split the podium share. `gil@` never trains, so he is ranked and never
+paid.
 
 Or join their crew with invite code **`DEMO01`**.
 
@@ -147,7 +150,7 @@ arrow keys or space to advance, `Home` / `End` to jump.
 ## Tests
 
 ```bash
-npm test                 # 77 unit — pure domain logic, offline
+npm test                 # 95 unit — pure domain logic, offline
 npm run test:integration # 35 against the real database, incl. 22 RLS attacks
 npm run test:e2e         #  6 end-to-end against the live deployment
 npm run db:verify        # 12 schema invariants the security doc claims

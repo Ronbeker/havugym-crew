@@ -71,7 +71,7 @@ havugym-crew/
 │   │   ├── queries.ts     ← כל הקריאות
 │   │   └── database.types.ts  ← נוצר מהסכמה (npx supabase gen types)
 │   └── middleware.ts
-├── supabase/migrations/                 8 מיגרציות, מסודרות
+├── supabase/migrations/                 10 מיגרציות, מסודרות
 ├── tests/                               unit + integration
 ├── e2e/                                 Playwright
 └── docs/                                המסמכים המוגשים

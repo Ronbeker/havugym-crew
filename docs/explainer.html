@@ -347,20 +347,24 @@
       <div class="fact"><dt>Stack</dt><dd>Next.js 16 &middot; TS &middot; Supabase</dd></div>
       <div class="fact"><dt>Tables</dt><dd>14 + 2 views</dd></div>
       <div class="fact"><dt>RLS policies</dt><dd>20</dd></div>
-      <div class="fact"><dt>Tests</dt><dd>118</dd></div>
-      <div class="fact"><dt>Region</dt><dd>fra1 / eu-central-1</dd></div>
+      <div class="fact"><dt>Tests</dt><dd>136</dd></div>
+      <div class="fact"><dt>Migrations</dt><dd>10</dd></div>
+      <div class="fact"><dt>Region</dt><dd>fra1</dd></div>
     </dl>
   </header>
 
   <nav class="rail" aria-label="Sections">
     <ol>
       <li><a href="#shape">The shape of it</a></li>
+      <li><a href="#stack">Every library, and why</a></li>
       <li><a href="#data">Data model</a></li>
       <li><a href="#write">The write path</a></li>
       <li><a href="#score">The score</a></li>
       <li><a href="#settle">Settlement</a></li>
       <li><a href="#security">Security</a></li>
       <li><a href="#money">Money</a></li>
+      <li><a href="#trace">A request, traced</a></li>
+      <li><a href="#tests">How it is tested</a></li>
       <li><a href="#files">Where things live</a></li>
       <li><a href="#bugs">Bugs found</a></li>
       <li><a href="#defence">Defending it</a></li>
@@ -417,9 +421,52 @@ eu-central-1   14 tables · 2 views · 20 policies · 13 functions
       </p>
     </section>
 
-    <!-- 2 -->
+
+    <!-- stack -->
+    <section id="stack">
+      <h2><span class="num">02</span>Every library, and why</h2>
+      <p class="lede">Eight runtime dependencies. Each one is here because something would be
+        materially worse without it — and the ones deliberately absent matter as much.</p>
+
+      <div class="wide">
+        <table>
+          <thead><tr><th>Package</th><th>Why this one</th></tr></thead>
+          <tbody>
+            <tr><td><code>next</code> 16</td><td>Required by the brief. The App Router is what makes Server Components possible, which is why there is no internal API to authenticate separately &mdash; pages read the database directly.</td></tr>
+            <tr><td><code>react</code> 19</td><td>Comes with Next. <code>useActionState</code> and <code>useFormStatus</code> remove every piece of hand-rolled pending/error state in the forms.</td></tr>
+            <tr><td><code>typescript</code></td><td>Required. Run in <code>strict</code>. The generated <code>database.types.ts</code> means a renamed column is a compile error, not a runtime <code>undefined</code>.</td></tr>
+            <tr><td><code>@supabase/supabase-js</code></td><td>The official client. Generic over the generated <code>Database</code> type, so every query is checked against the real schema.</td></tr>
+            <tr><td><code>@supabase/ssr</code></td><td>Handles session cookies across Server Components, Server Actions and middleware. Doing this by hand is how people end up logging users out mid-session &mdash; a Server Component cannot write cookies, so the refreshed token has nowhere to go.</td></tr>
+            <tr><td><code>zod</code> 4</td><td>Validation that also produces the TypeScript type. One schema, not a schema plus an interface that drift apart.</td></tr>
+            <tr><td><code>stripe</code></td><td>Payments. The card form is hosted by Stripe, so no card data ever reaches our origin and there is effectively no PCI surface.</td></tr>
+            <tr><td><code>server-only</code></td><td>Twelve bytes of package that turns "someone imported the service-role client into a Client Component" from a production incident into a build error.</td></tr>
+            <tr><td><code>tailwindcss</code> 4</td><td>Styling next to the markup. No stylesheet that grows forever and no dead selectors nobody dares delete.</td></tr>
+            <tr><td><code>vitest</code></td><td>Native ESM, shares the Vite config, and the unit suite runs in about a quarter of a second &mdash; fast enough to actually run.</td></tr>
+            <tr><td><code>@playwright/test</code></td><td>End-to-end against the deployed site, not a local build.</td></tr>
+            <tr><td><code>pg</code></td><td>Tests and <code>db:verify</code> only, for <code>EXPLAIN</code> and catalogue queries PostgREST cannot express. The application never imports it.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Deliberately not used</h3>
+      <div class="wide">
+        <table>
+          <thead><tr><th>Not used</th><th>Reason</th></tr></thead>
+          <tbody>
+            <tr><td>An ORM (Prisma, Drizzle)</td><td>It would hide the RLS policies and the RPCs, which <em>are</em> the design. The interesting behaviour lives in Postgres; an abstraction whose selling point is hiding Postgres is working against this codebase.</td></tr>
+            <tr><td>A state library (Redux, Zustand)</td><td>There is no global client state. The server holds it; one form holds a draft.</td></tr>
+            <tr><td>A data-fetching library (React Query, SWR)</td><td>Server Components fetch during render. There is no client cache to invalidate.</td></tr>
+            <tr><td>A component library (MUI, shadcn)</td><td>Twelve components do not justify the dependency, the bundle, or the visual homogeneity.</td></tr>
+            <tr><td>A date library (date-fns, dayjs)</td><td><code>Intl.DateTimeFormat</code> handles the timezone arithmetic, and it is the part that had to be understood rather than delegated.</td></tr>
+            <tr><td>An icon package</td><td>Fourteen inline SVGs. No emoji: they render differently per platform and screen readers announce their unicode names.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3 -->
     <section id="data">
-      <h2><span class="num">02</span>Data model</h2>
+      <h2><span class="num">03</span>Data model</h2>
       <p class="lede">Fourteen tables. The <em>havura</em> — the crew — is the tenant boundary, and almost every row is reachable only through membership in one.</p>
 
       <figure>
@@ -487,7 +534,7 @@ havuras ──&lt; competitions ──&lt; competition_results</code></pre>
 
     <!-- 3 -->
     <section id="write">
-      <h2><span class="num">03</span>The write path</h2>
+      <h2><span class="num">04</span>The write path</h2>
       <p class="lede">The client has no <code>INSERT</code> privilege anywhere. Every write that touches more than one row happens inside a database function.</p>
 
       <figure>
@@ -533,7 +580,7 @@ havuras ──&lt; competitions ──&lt; competition_results</code></pre>
 
     <!-- 4 -->
     <section id="score">
-      <h2><span class="num">04</span>The score</h2>
+      <h2><span class="num">05</span>The score</h2>
       <p class="lede">0&ndash;100, measured against <em>your own</em> recent baseline — which is the only reason a shared leaderboard between a beginner and a veteran means anything.</p>
 
       <div class="formula">
@@ -585,7 +632,7 @@ havuras ──&lt; competitions ──&lt; competition_results</code></pre>
 
     <!-- 5 -->
     <section id="settle">
-      <h2><span class="num">05</span>Settlement</h2>
+      <h2><span class="num">06</span>Settlement</h2>
       <p class="lede">The only place in the product where creatine is created from nothing. It has to be exactly right, and exactly once.</p>
 
       <h3>Ranking and the tie rule</h3>
@@ -629,7 +676,7 @@ havuras ──&lt; competitions ──&lt; competition_results</code></pre>
 
     <!-- 6 -->
     <section id="security">
-      <h2><span class="num">06</span>Security</h2>
+      <h2><span class="num">07</span>Security</h2>
       <p class="lede">Three independent layers. Section 09 describes the time one of them was wrong and the other two held.</p>
 
       <pre><code>1. GRANT      which tables and <b>which columns</b> are reachable at all
@@ -688,7 +735,7 @@ havuras ──&lt; competitions ──&lt; competition_results</code></pre>
 
     <!-- 7 -->
     <section id="money">
-      <h2><span class="num">07</span>Money</h2>
+      <h2><span class="num">08</span>Money</h2>
       <p class="lede">Stripe Checkout in test mode. The riskiest endpoint in the app, and the one place where two delivery paths are safer than one.</p>
 
       <h3>The webhook is fully public</h3>
@@ -736,9 +783,204 @@ event = stripe.webhooks.constructEvent(
       </p>
     </section>
 
+
+    <!-- trace -->
+    <section id="trace">
+      <h2><span class="num">09</span>A request, traced</h2>
+      <p class="lede">One flow followed all the way down, because the seams are where the design
+        actually lives. This is "log a workout", from the keystroke to the stored score.</p>
+
+      <h3>1 &middot; The draft lives in the browser, and only there</h3>
+      <p>
+        <code>workout-logger.tsx</code> is the only meaningful client state in the app, because a
+        half-entered session genuinely does not exist on the server yet.
+      </p>
+      <pre><code>const [entries, setEntries] = useState&lt;DraftExercise[]&gt;([]);
+
+<span class="cmt">// A blank set inherits the previous one: sets repeat far more often than</span>
+<span class="cmt">// they change, which is the difference between four taps and sixteen.</span>
+const nextSet = (previous?: DraftSet): DraftSet =&gt; ({
+  weightKg: previous?.weightKg ?? '',
+  reps: previous?.reps ?? '',
+});</code></pre>
+
+      <h3>2 &middot; The preview runs the real formula</h3>
+      <pre><code>const preview = useMemo(() =&gt; {
+  const sets = entries.flatMap((entry) =&gt;
+    entry.sets.filter((s) =&gt; s.reps !== '' &amp;&amp; s.weightKg !== '').map((s) =&gt; ({
+      reps: Number(s.reps),
+      weightKg: Number(s.weightKg),
+      equipment: entry.exercise.equipment,      <span class="cmt">// drives the bodyweight proxy</span>
+      musclePrimary: entry.exercise.muscle_primary,  <span class="cmt">// drives coverage</span>
+    })));
+  if (sets.length === 0) return null;
+  return scoreWorkout({ sets, durationMin: Math.max(Number(duration) || 1, 1), priors });
+}, [entries, duration, priors]);</code></pre>
+      <p>
+        <code>priors</code> came from the server as a prop &mdash; eight <code>{ volume, durationMin }</code>
+        pairs, nothing sensitive &mdash; so the preview recomputes on every keystroke without a round
+        trip to Frankfurt.
+      </p>
+
+      <h3>3 &middot; The Server Action validates, and refuses to be trusted</h3>
+      <pre><code>export async function logWorkoutAction(
+  _prev: ActionResult&lt;string&gt; | null,
+  formData: FormData,
+): Promise&lt;ActionResult&lt;string&gt;&gt; {
+  <span class="cmt">// The sets arrive as a JSON string in a hidden field. Malformed JSON is a</span>
+  <span class="cmt">// message, not a 500.</span>
+  let sets: unknown = [];
+  try { sets = JSON.parse(typeof rawSets === 'string' ? rawSets : '[]'); }
+  catch { return actionError('Could not read the sets you entered.'); }
+
+  const parsed = logWorkoutSchema.safeParse({ havuraId, title, notes, durationMin, performedAt, sets });
+  if (!parsed.success) return actionError(..., fieldErrorsFrom(parsed.error.issues));</code></pre>
+      <div class="note">
+        <span class="tag">The line that matters</span>
+        <p>
+          There is <strong>no score in this payload</strong>. The action cannot send one, because
+          the RPC below does not accept one. The only thing a caller can influence is what was
+          actually lifted.
+        </p>
+      </div>
+
+      <h3>4 &middot; One RPC, one transaction</h3>
+      <pre><code>const { data, error } = await supabase.rpc('log_workout', {
+  p_havura_id: parsed.data.havuraId,
+  p_performed_at: parsed.data.performedAt,
+  p_title: parsed.data.title,
+  p_notes: parsed.data.notes ?? '',   <span class="cmt">// nullif(trim(...),'') inside stores NULL</span>
+  p_duration_min: parsed.data.durationMin,
+  p_sets: parsed.data.sets.map((set) =&gt; ({ exercise_id: ..., set_index: ..., ... })),
+});</code></pre>
+      <p>Sent through the <em>user's</em> client, so the JWT travels with it and the function sees a real <code>auth.uid()</code>:</p>
+      <pre><code><span class="kw">create or replace function</span> public.log_workout(...)
+<span class="kw">security definer set</span> search_path = public, pg_temp <span class="kw">as</span> 51431
+<span class="kw">declare</span> v_uid uuid := auth.uid();
+<span class="kw">begin</span>
+  <span class="kw">if</span> v_uid <span class="kw">is null then raise exception</span> 'UNAUTHENTICATED'; <span class="kw">end if</span>;
+  <span class="kw">if not</span> public.is_havura_member(p_havura_id) <span class="kw">then</span>
+     <span class="kw">raise exception</span> 'NOT_A_MEMBER'; <span class="kw">end if</span>;
+
+  <span class="kw">insert into</span> public.workouts (user_id, ...) <span class="kw">values</span> (v_uid, ...) <span class="kw">returning</span> id <span class="kw">into</span> v_id;
+  <span class="kw">insert into</span> public.workout_sets (...) <span class="kw">select</span> ... <span class="kw">from</span> jsonb_array_elements(p_sets);
+
+  <span class="kw">update</span> public.workouts
+     <span class="kw">set</span> score = public.compute_workout_score(v_id)   <span class="cmt">-- computed here, from stored rows</span>
+   <span class="kw">where</span> id = v_id;
+<span class="kw">end</span>; 51431;</code></pre>
+      <ul class="plain">
+        <li><code>v_uid := auth.uid()</code> &mdash; the user id is <strong>never a parameter</strong>, so no caller can log as somebody else even by invoking the RPC directly.</li>
+        <li>Parent, children and score commit together, or none of them do.</li>
+        <li>Whatever the client believed the score was is irrelevant by this point.</li>
+      </ul>
+
+      <h3>5 &middot; The page re-renders from the database</h3>
+      <pre><code>revalidatePath('/feed');
+revalidatePath('/crew');
+return actionOk(data as string);</code></pre>
+      <p>
+        No client cache to reconcile: the Server Component simply runs again and reads the row that
+        now exists. The redirect to <code>/workouts/&lt;id&gt;</code> then shows the stored score &mdash;
+        which, if the two implementations agree, is the number the preview showed.
+      </p>
+
+      <h3>The other flow worth tracing: closing a week</h3>
+      <pre><code>await ensureActivityWeeks(havura.id);   <span class="cmt">// create weeks the crew trained in</span>
+await settleDueWeeks(havura.id);        <span class="cmt">// settle every finished one</span></code></pre>
+      <p>
+        Both run with the <strong>service role</strong>, because <code>authenticated</code> has no
+        INSERT on <code>challenges</code> or <code>competitions</code> &mdash; a member must not be
+        able to invent a challenge with a target of 1 and a reward of 100,000. They are only ever
+        reached from server code that has already confirmed membership.
+      </p>
+      <pre><code>const results = settleCompetition(entries, competition.pot_creatine);
+
+<span class="kw">for</span> (const result of results.filter((r) =&gt; r.payout &gt; 0)) {
+  <span class="kw">await</span> admin.rpc('apply_creatine', {
+    p_user_id: result.userId,
+    p_delta: result.payout,
+    p_reason: 'competition_payout',
+    p_ref_type: 'competition',
+    p_ref_id: competition.id,      <span class="cmt">// ← the idempotency key</span>
+  });
+}</code></pre>
+      <p>
+        Two people opening the crew page at the same moment both compute the same payouts and both
+        try to pay. The unique index on
+        <code>creatine_ledger (user_id, reason, ref_type, ref_id)</code> means the second one loses.
+        <strong>Exactly-once, guaranteed by an index rather than by a lock we remembered to take.</strong>
+      </p>
+    </section>
+
+    <!-- tests -->
+    <section id="tests">
+      <h2><span class="num">10</span>How it is tested</h2>
+      <p class="lede">136 tests in three tiers, split by what they can actually prove.</p>
+
+      <div class="wide">
+        <table>
+          <thead><tr><th>Tier</th><th>Count</th><th>What it proves</th></tr></thead>
+          <tbody>
+            <tr><td>Unit &mdash; Vitest</td><td class="num-col">95</td><td>Pure domain logic and validation. No database, no clock, no network. Runs in ~0.25s.</td></tr>
+            <tr><td>Integration &mdash; Vitest</td><td class="num-col">35</td><td>Against the real database. 22 of them are attacks.</td></tr>
+            <tr><td>End-to-end &mdash; Playwright</td><td class="num-col">6</td><td>Against the deployed application.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Why the integration tests are not mocked</h3>
+      <p>
+        This is the single most important testing decision in the project. Mocking the Supabase
+        client would have proved that <em>our mock</em> refuses. The claim that needs proving is
+        that <strong>Postgres</strong> refuses &mdash; with real policies, real grants and a real JWT.
+        So the tests create real users, sign in for real, and attack:
+      </p>
+      <pre><code>it('a member cannot award themselves a score', <span class="kw">async</span> () =&gt; {
+  const before = <span class="kw">await</span> admin().from('workouts').select('score').eq('id', aliceWorkout).single();
+
+  <span class="kw">await</span> alice.client.from('workouts').update({ score: 100 }).eq('id', aliceWorkout);
+
+  const after = <span class="kw">await</span> admin().from('workouts').select('score').eq('id', aliceWorkout).single();
+  expect(after.data!.score).toBe(before.data!.score);   <span class="cmt">// unchanged</span>
+});</code></pre>
+      <p>
+        Note there is no <code>expect(error).toBeTruthy()</code>. PostgREST reports an update that
+        matched no permitted column as a success with zero rows affected, so the test asserts the
+        thing that actually matters: <strong>the value did not move</strong>.
+      </p>
+
+      <h3>The test that stops the two score implementations drifting</h3>
+      <pre><code>const workoutId = <span class="kw">await</span> logWorkout(athlete, crew, sets, { durationMin: duration });
+const stored = <span class="kw">await</span> admin().from('workouts').select('score').eq('id', workoutId).single();
+const expected = scoreWorkout({ sets: scoredSets, durationMin: duration, priors });
+
+<span class="cmt">// Postgres numeric is exact; JavaScript is float64. A cent of tolerance is</span>
+<span class="cmt">// honest about that rather than pretending they are bit-identical.</span>
+expect(Math.abs(Number(stored!.score) - expected.score)).toBeLessThanOrEqual(0.01);</code></pre>
+      <p>Seven fixtures, including a zero-load set, a five-minute session and 100-rep sets.</p>
+
+      <h3>One deliberately positive permission test</h3>
+      <p>
+        Among twenty-two attacks sits <code>a member CAN correct the title of their own workout</code>.
+        Without it, a suite where <em>everything</em> is blocked would pass while the application was
+        completely broken. A security test suite needs at least one test that fails if you lock the
+        doors too hard.
+      </p>
+
+      <h3>And a checker that keeps the documents honest</h3>
+      <pre><code>npm run db:verify</code></pre>
+      <p>
+        Twelve invariants, each one a claim the security document makes: RLS on every table,
+        <code>anon</code> holding no privileges, no UPDATE on <code>score</code> or on
+        <code>creatine_balance</code>, and the cached balance equalling the ledger sum. If a document
+        says it, this asserts it.
+      </p>
+    </section>
+
     <!-- 8 -->
     <section id="files">
-      <h2><span class="num">08</span>Where things live</h2>
+      <h2><span class="num">11</span>Where things live</h2>
       <p class="lede">One organising rule: <code>lib/domain</code> imports nothing from <code>lib/supabase</code>. Dependencies point inward, never out.</p>
 
       <div class="wide">
@@ -765,8 +1007,8 @@ event = stripe.webhooks.constructEvent(
 
     <!-- 9 -->
     <section id="bugs">
-      <h2><span class="num">09</span>Bugs found, and how</h2>
-      <p class="lede">Five real defects. Three came from running tests; two came from looking at the running application.</p>
+      <h2><span class="num">12</span>Bugs found, and how</h2>
+      <p class="lede">Nine real defects. Some from the tests, some from looking at the running application, and the most serious ones from running a full-size demo rather than reading code.</p>
 
       <div class="wide">
         <table>
@@ -797,6 +1039,26 @@ event = stripe.webhooks.constructEvent(
               <td><code>npm run db:verify</code></td>
               <td><code>REVOKE ALL ON ALL TABLES</code> only affects objects that exist at that moment</td>
             </tr>
+            <tr>
+              <td><strong>Account deletion was impossible</strong> for anyone who had created a crew</td>
+              <td>Running the demo seed</td>
+              <td>Needs a user who is also a crew founder &mdash; only happens in a full flow</td>
+            </tr>
+            <tr>
+              <td><strong>The feed could skip rows</strong> at a page boundary</td>
+              <td>Analysing the cursor under 174 workouts</td>
+              <td>Needs two sessions logged in the same minute</td>
+            </tr>
+            <tr>
+              <td>Clearing the date field <strong>threw</strong> <code>RangeError</code></td>
+              <td>Code review</td>
+              <td><code>new Date('').toISOString()</code> raises; only on the "user cleared it" path</td>
+            </tr>
+            <tr>
+              <td>Day-of-week came from re-parsing <code>toLocaleString</code> output</td>
+              <td>Code review</td>
+              <td>Locale-dependent; worked in development and is Invalid Date in some runtimes</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -812,6 +1074,29 @@ event = stripe.webhooks.constructEvent(
         <p>
           <strong>RLS narrows what you are allowed to see. It does not decide which row you
           meant.</strong>
+        </p>
+      </div>
+
+      <h3>The one that would have been worse to "fix" naively</h3>
+      <p>
+        Every foreign key pointing at <code>profiles</code> cascades on delete &mdash; except
+        <code>havuras.created_by</code>, which defaulted to <code>RESTRICT</code>. Since
+        <code>profiles</code> cascades from <code>auth.users</code>, deleting any member who had
+        ever created a crew failed with <code>Database error deleting user</code> and a 500. The
+        account could never be removed, which is a privacy problem as much as a data one.
+      </p>
+      <div class="note warn">
+        <span class="tag">Why CASCADE would have been the wrong repair</span>
+        <p>
+          <code>ON DELETE CASCADE</code> makes the error go away and introduces a far worse bug:
+          deleting the founder deletes the crew, and the crew's own cascade takes
+          <strong>every member's workouts</strong> with it. One person closing their account would
+          erase nine other people's training history.
+        </p>
+        <p>
+          <code>SET NULL</code> is the honest model. A crew is a shared object that outlives the
+          account that happened to open it, and <code>havura_members</code> already holds the
+          ownership that actually matters &mdash; and it cascades correctly.
         </p>
       </div>
 
@@ -838,7 +1123,7 @@ event = stripe.webhooks.constructEvent(
 
     <!-- 10 -->
     <section id="defence">
-      <h2><span class="num">10</span>Defending it</h2>
+      <h2><span class="num">13</span>Defending it</h2>
       <p class="lede">The questions most likely to come, and the honest answer to each.</p>
 
       <div class="qa">

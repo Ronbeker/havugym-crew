@@ -211,7 +211,7 @@
     <div class="stats">
       <div class="stat"><div class="n">14</div><div class="l">טבלאות</div></div>
       <div class="stat"><div class="n">20</div><div class="l">RLS policies</div></div>
-      <div class="stat"><div class="n">118</div><div class="l">בדיקות</div></div>
+      <div class="stat"><div class="n">136</div><div class="l">בדיקות</div></div>
       <div class="stat"><div class="n">660</div><div class="l">תרגילים בקטלוג</div></div>
     </div>
   </section>
@@ -367,7 +367,7 @@ UPDATE workouts SET score = 100 WHERE id = &lt;שלי&gt;;
     <p class="eyebrow">בדיקות</p>
     <h2>כל בדיקת הרשאה כתובה כתקיפה</h2>
     <div class="stats">
-      <div class="stat"><div class="n">77</div><div class="l">unit — לוגיקה טהורה, ללא I/O</div></div>
+      <div class="stat"><div class="n">95</div><div class="l">unit — לוגיקה טהורה, ללא I/O</div></div>
       <div class="stat"><div class="n">35</div><div class="l">integration — מול המסד האמיתי</div></div>
       <div class="stat"><div class="n">6</div><div class="l">E2E — מול הפריסה החיה</div></div>
     </div>
@@ -395,16 +395,32 @@ Execution Time: <b>10.5 ms</b></pre>
   <!-- 15 -->
   <section class="slide">
     <p class="eyebrow">מה מצאנו בדרך</p>
-    <h2>חמישה באגים אמיתיים</h2>
+    <h2>תשעה באגים אמיתיים</h2>
     <ul>
-      <li class="pt"><span class="mark">01</span><span><code style="font-family:var(--mono);font-size:.8em">rpad(name,2,'.')</code> קיצץ כל שם לשני תווים — "Dana" נשמר כ-"Da"</span></li>
-      <li class="pt"><span class="mark">02</span><span>שבועות שאיש לא פתח בהם את האפליקציה מעולם לא נסגרו ולא שולמו</span></li>
-      <li class="pt"><span class="mark">03</span><span><b>היתרה נקראה 0</b> כי <code style="font-family:var(--mono);font-size:.8em">.single()</code> החזיר ארבע שורות — חברי החבורה</span></li>
-      <li class="pt"><span class="mark">04</span><span>חישוב היסט אזור זמן שגוי בפונקציה שלא הייתה בשימוש</span></li>
-      <li class="pt"><span class="mark">05</span><span>ה-views קיבלו הרשאה ל-<code style="font-family:var(--mono);font-size:.8em">anon</code></span></li>
+      <li class="pt"><span class="mark">01</span><span><b>מחיקת חשבון הייתה בלתי אפשרית</b> לכל מי שיצר חבורה — FK יחיד ללא <code style="font-family:var(--mono);font-size:.8em">CASCADE</code></span></li>
+      <li class="pt"><span class="mark">02</span><span><b>ה-feed יכול היה לדלג על שורות</b> — cursor על חותמת זמן בלבד</span></li>
+      <li class="pt"><span class="mark">03</span><span><b>היתרה נקראה 0</b> כי <code style="font-family:var(--mono);font-size:.8em">.single()</code> החזיר שורה לכל חבר בחבורה</span></li>
+      <li class="pt"><span class="mark">04</span><span><code style="font-family:var(--mono);font-size:.8em">rpad(name,2,'.')</code> קיצץ כל שם לשני תווים — "Dana" נשמר כ-"Da"</span></li>
+      <li class="pt"><span class="mark">05</span><span>ועוד חמישה — ה-views שקיבלו הרשאה ל-<code style="font-family:var(--mono);font-size:.8em">anon</code>, שבועות שלא נסגרו, ועוד</span></li>
     </ul>
     <p class="sub wide-sub" style="margin-top:22px">
       <b style="color:var(--text)">RLS מצמצם את מה שמותר לראות. הוא לא מחליט איזו שורה התכוונת אליה.</b>
+    </p>
+  </section>
+
+  <!-- 15b -->
+  <section class="slide">
+    <p class="eyebrow">הבאג שהתיקון הנאיבי שלו היה גרוע ממנו</p>
+    <h2 class="quote">מחיקת חשבון אחת<br>הייתה מוחקת את ההיסטוריה של <b>תשעה אנשים אחרים</b>.</h2>
+    <pre style="margin-top:24px">havuras.created_by → profiles(id)    <i>ON DELETE NO ACTION</i>
+
+<i>-- התיקון המתבקש:</i>
+ON DELETE <b>CASCADE</b>   → מוחק את החבורה → מוחק את כל האימונים של כולם
+
+<i>-- התיקון הנכון:</i>
+ON DELETE <b>SET NULL</b>  → החבורה שורדת את החשבון שפתח אותה</pre>
+    <p class="sub wide-sub" style="margin-top:20px">
+      הבעלות האמיתית ממילא נשמרת ב-<code style="font-family:var(--mono);font-size:.85em">havura_members</code>, שמוגדר נכון. השדה <code style="font-family:var(--mono);font-size:.85em">created_by</code> הוא ייחוס, לא תלות מבנית.
     </p>
   </section>
 
@@ -419,6 +435,21 @@ Execution Time: <b>10.5 ms</b></pre>
       <li class="pt"><span class="mark">04</span><span>Rate limiting מפורש משלנו</span></li>
       <li class="pt"><span class="mark">05</span><span>איסוף משקל גוף, כדי לוותר על ה-proxy של 30 ק"ג</span></li>
     </ul>
+  </section>
+
+
+  <!-- QA -->
+  <section class="slide">
+    <p class="eyebrow">QA בגודל אמיתי</p>
+    <h2>הדמו נבנה כדי להפעיל את המכניקות, לא להציג אותן</h2>
+    <pre>11 חברים · 6 שבועות · 174 אימונים · 1,571 סטים · 2 חבורות
+
+<b>Roni + Alon</b>  מתאמנים זהה  → תיקו בכל שבוע, נתחים מאוחדים ומחולקים
+<b>Gil</b>          לא מתאמן כלל → מדורג ב-5 שבועות, שולם <b>0</b>
+
+5 שבועות נסגרו · כל אחד שילם <b>500 מתוך 500</b> בדיוק
+feed: 9 עמודים · 20×8+14 = 174 · <b>אפס חפיפות, אפס דילוגים</b>
+ledger: cache == סכום ה-ledger בכל 11 החשבונות</pre>
   </section>
 
   <!-- 17 -->
@@ -442,7 +473,7 @@ Execution Time: <b>10.5 ms</b></pre>
   <span class="who">HavuGym Crew &middot; Internet Technologies &middot; RUNI CS 2026</span>
   <div class="nav">
     <button id="prev" aria-label="Previous slide">&larr;</button>
-    <span class="count" id="count">1 / 17</span>
+    <span class="count" id="count">1 / 19</span>
     <button id="next" aria-label="Next slide">&rarr;</button>
   </div>
 </div>

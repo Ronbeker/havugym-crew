@@ -17,12 +17,13 @@
 
 חבורת דמו עם שלושה שבועות של היסטוריה כבר קיימת במערכת:
 
-| אימייל | סיסמה |
-|---|---|
-| `dana@havugym-demo.com` | `DemoCrew2026!` |
-| `itay@havugym-demo.com` | `DemoCrew2026!` |
-| `maya@havugym-demo.com` | `DemoCrew2026!` |
-| `noam@havugym-demo.com` | `DemoCrew2026!` |
+אחד-עשר חברים, שישה שבועות, 174 אימונים. כל אחד מהבאים, כולם עם הסיסמה `DemoCrew2026!`:
+
+`dana@` · `itay@` · `maya@` · `noam@` · `shira@` · `omer@` · `tamar@` ·
+`yonatan@` · `roni@` · `alon@` · `gil@` — כולם `@havugym-demo.com`
+
+`dana@` היא בעלת החבורה. `roni@` ו-`alon@` מתאמנים באופן זהה, ולכן הם בתיקו בכל שבוע
+וחולקים את נתח הפודיום. `gil@` לא מתאמן כלל — הוא מדורג ואף פעם לא מקבל תשלום.
 
 אפשר גם להירשם עם כל כתובת ולהצטרף לחבורה עם קוד ההזמנה **`DEMO01`**.
 
@@ -41,7 +42,7 @@
 | 3 | מסמך אפיון מוצר | [`docs/01-product-spec.md`](./docs/01-product-spec.md) |
 | 4 | מסמך תכנון טכני | [`docs/02-technical-design.md`](./docs/02-technical-design.md) |
 | 5 | מסמך אפיון בדיקות | [`docs/03-test-spec.md`](./docs/03-test-spec.md) |
-| 6 | קוד הבדיקות | [`tests/`](./tests) · [`e2e/`](./e2e) — 118 בדיקות |
+| 6 | קוד הבדיקות | [`tests/`](./tests) · [`e2e/`](./e2e) — 136 בדיקות |
 | 7 | מסמך סקייל בסיסי | [`docs/04-scale.md`](./docs/04-scale.md) |
 | 8 | מסמך אבטחה בסיסית | [`docs/05-security.md`](./docs/05-security.md) |
 | 9 | הוראות הרצה מקומית | [`README.md`](./README.md) · וגם למטה |
@@ -91,7 +92,7 @@ Stripe אופציונלי: בלי המפתחות החנות עובדת במלו�
 ### הרצת הבדיקות
 
 ```bash
-npm test                   # 77 unit — לוגיקה טהורה, ללא רשת
+npm test                   # 95 unit — לוגיקה טהורה, ללא רשת
 npm run test:integration   # 35 מול המסד האמיתי (22 מהן תקיפות הרשאה)
 npm run test:e2e           #  6 מקצה לקצה מול הפריסה החיה
 npm run db:verify          # 12 אינווריאנטים של הסכמה
@@ -110,7 +111,7 @@ npm run test:all           # הכול
 | אימות | Supabase Auth (אימייל וסיסמה) |
 | תשלומים | Stripe Checkout, test mode |
 | עיצוב | Tailwind CSS v4 |
-| בדיקות | Vitest · Playwright — **118 בדיקות** |
+| בדיקות | Vitest · Playwright — **136 בדיקות** |
 | אירוח | Vercel, אזור `fra1` — באותו אזור כמו המסד |
 
 ### שלוש נקודות שכדאי להסתכל עליהן
