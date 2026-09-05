@@ -345,10 +345,10 @@
     </p>
     <dl class="facts">
       <div class="fact"><dt>Stack</dt><dd>Next.js 16 &middot; TS &middot; Supabase</dd></div>
-      <div class="fact"><dt>Tables</dt><dd>14 + 2 views</dd></div>
-      <div class="fact"><dt>RLS policies</dt><dd>20</dd></div>
-      <div class="fact"><dt>Tests</dt><dd>136</dd></div>
-      <div class="fact"><dt>Migrations</dt><dd>10</dd></div>
+      <div class="fact"><dt>Tables</dt><dd>15 + 3 views</dd></div>
+      <div class="fact"><dt>RLS policies</dt><dd>21</dd></div>
+      <div class="fact"><dt>Tests</dt><dd>164</dd></div>
+      <div class="fact"><dt>Migrations</dt><dd>11</dd></div>
       <div class="fact"><dt>Region</dt><dd>fra1</dd></div>
     </dl>
   </header>
@@ -361,6 +361,7 @@
       <li><a href="#write">The write path</a></li>
       <li><a href="#score">The score</a></li>
       <li><a href="#settle">Settlement</a></li>
+      <li><a href="#arrivals">Arrivals</a></li>
       <li><a href="#security">Security</a></li>
       <li><a href="#money">Money</a></li>
       <li><a href="#trace">A request, traced</a></li>
@@ -675,8 +676,90 @@ havuras ──&lt; competitions ──&lt; competition_results</code></pre>
     </section>
 
     <!-- 6 -->
+
+    <!-- arrivals -->
+    <section id="arrivals">
+      <h2><span class="num">07</span>Arrivals</h2>
+      <p class="lede">The prospective half. Everything else here reports what already happened;
+        this is the only surface that fires while somebody else can still act on it.</p>
+
+      <h3>Why it exists</h3>
+      <p>
+        A feed of finished sessions is an <strong>injunctive norm</strong> &mdash; "you should train
+        more" &mdash; and people are very good at ignoring those. An arrival is a
+        <strong>descriptive norm</strong>: people like you are doing this right now. That is the
+        distinction behind the well-known hotel-towel result, where telling guests that
+        <em>most guests</em> reuse their towels beat every environmental appeal tested against it.
+        What moves behaviour is not the instruction; it is evidence that your reference group is
+        already doing the thing.
+      </p>
+      <p>
+        A crew of three to ten people who know each other outside the app is close to an ideal
+        reference group for that effect: small enough that every name is somebody real, large
+        enough that "three of them are there" carries weight.
+      </p>
+
+      <h3>The count is the signal</h3>
+      <div class="wide">
+        <table>
+          <thead><tr><th>Out</th><th>What it says</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td class="num-col">0</td><td>"Nobody is at the gym"</td><td>A real state, with its own call to action</td></tr>
+            <tr><td class="num-col">1</td><td>"Dana is out right now"</td><td>A fact</td></tr>
+            <tr><td class="num-col">2</td><td>"Dana and Itay are out right now"</td><td>The beginning of a pattern</td></tr>
+            <tr><td class="num-col">3+</td><td><strong>"3 of your crew are out right now"</strong><br>"That is most of the crew. Today is the easy day to go."</td><td>A norm &mdash; and past two names, the <em>count</em> is the message</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        People already at the gym are listed ahead of people intending to go, even when the
+        intention was announced first: <strong>a fact outranks a plan.</strong>
+      </p>
+
+      <h3>Why it has to expire</h3>
+      <div class="note warn">
+        <span class="tag">The failure mode that kills the feature</span>
+        <p>
+          A stale "at the gym" flag teaches the crew that the signal is noise &mdash; and once they
+          have learned that, it cannot be un-learned. Every subsequent arrival is discounted.
+        </p>
+      </div>
+      <p>Three defences, all in the database rather than in the UI:</p>
+      <ul class="plain">
+        <li>Each arrival carries its own <code>expires_at</code>.</li>
+        <li>The window is chosen <strong>server-side from the status</strong> &mdash; 45 minutes for
+          "on the way", 150 for "at the gym". A caller that could set its own expiry could park
+          itself at the top of the crew's screen for a week.</li>
+        <li>Expiry is decided by the <strong>database clock</strong>, inside the view's
+          <code>WHERE</code>, so two members loading a second apart cannot disagree about who is out.</li>
+      </ul>
+
+      <h3>Closing the loop</h3>
+      <pre><code><span class="cmt">-- inside log_workout(), same transaction as the session itself</span>
+<span class="kw">update</span> public.arrivals
+<span class="kw">set</span> closed_at = now(), workout_id = v_id
+<span class="kw">where</span> user_id = v_uid <span class="kw">and</span> havura_id = p_havura_id <span class="kw">and</span> closed_at <span class="kw">is null</span>;</code></pre>
+      <p>
+        The arrival becomes the session it turned into. Nobody has to remember to switch themselves
+        off, which matters because nobody ever does.
+      </p>
+
+      <h3>Two smaller decisions</h3>
+      <ul class="plain">
+        <li><strong>Self-declared, not geolocated.</strong> Location permission is a real cost, and a
+          false arrival fools your friends exactly once. The system never holds where you are &mdash;
+          only that you said you were at a gym.</li>
+        <li><strong>Polling, not Realtime.</strong> A websocket is another connection, another
+          failure mode and another section in the security document, in exchange for latency nobody
+          deciding whether to go to the gym can perceive. It reads once a minute, through a
+          <em>partial</em> index that contains only open arrivals. If crews ever reached the
+          hundreds this is the first decision I would reverse &mdash; and it is a local change,
+          because the signal is already computed from a plain list.</li>
+      </ul>
+    </section>
+
     <section id="security">
-      <h2><span class="num">07</span>Security</h2>
+      <h2><span class="num">08</span>Security</h2>
       <p class="lede">Three independent layers. Section 09 describes the time one of them was wrong and the other two held.</p>
 
       <pre><code>1. GRANT      which tables and <b>which columns</b> are reachable at all
@@ -735,7 +818,7 @@ havuras ──&lt; competitions ──&lt; competition_results</code></pre>
 
     <!-- 7 -->
     <section id="money">
-      <h2><span class="num">08</span>Money</h2>
+      <h2><span class="num">09</span>Money</h2>
       <p class="lede">Stripe Checkout in test mode. The riskiest endpoint in the app, and the one place where two delivery paths are safer than one.</p>
 
       <h3>The webhook is fully public</h3>
@@ -786,7 +869,7 @@ event = stripe.webhooks.constructEvent(
 
     <!-- trace -->
     <section id="trace">
-      <h2><span class="num">09</span>A request, traced</h2>
+      <h2><span class="num">10</span>A request, traced</h2>
       <p class="lede">One flow followed all the way down, because the seams are where the design
         actually lives. This is "log a workout", from the keystroke to the stored score.</p>
 
@@ -915,7 +998,7 @@ await settleDueWeeks(havura.id);        <span class="cmt">// settle every finish
 
     <!-- tests -->
     <section id="tests">
-      <h2><span class="num">10</span>How it is tested</h2>
+      <h2><span class="num">11</span>How it is tested</h2>
       <p class="lede">136 tests in three tiers, split by what they can actually prove.</p>
 
       <div class="wide">
@@ -980,7 +1063,7 @@ expect(Math.abs(Number(stored!.score) - expected.score)).toBeLessThanOrEqual(0.0
 
     <!-- 8 -->
     <section id="files">
-      <h2><span class="num">11</span>Where things live</h2>
+      <h2><span class="num">12</span>Where things live</h2>
       <p class="lede">One organising rule: <code>lib/domain</code> imports nothing from <code>lib/supabase</code>. Dependencies point inward, never out.</p>
 
       <div class="wide">
@@ -992,9 +1075,9 @@ expect(Math.abs(Number(stored!.score) - expected.score)).toBeLessThanOrEqual(0.0
             <tr><td><code>src/lib/services/</code></td><td>Privileged work needing the service role: weekly settlement, order crediting.</td></tr>
             <tr><td><code>src/lib/supabase/</code></td><td>The three clients.</td></tr>
             <tr><td><code>src/lib/queries.ts</code></td><td>Every read, in one file.</td></tr>
-            <tr><td><code>supabase/migrations/</code></td><td>Eight migrations: schema, RLS, functions, two seeds, views, and two fixes.</td></tr>
-            <tr><td><code>tests/</code></td><td>77 unit, 35 integration against the real database.</td></tr>
-            <tr><td><code>e2e/</code></td><td>Six Playwright specs against the live deployment.</td></tr>
+            <tr><td><code>supabase/migrations/</code></td><td>Eleven migrations: schema, RLS, functions, two seeds, views, four fixes, and arrivals.</td></tr>
+            <tr><td><code>tests/</code></td><td>110 unit, 46 integration against the real database.</td></tr>
+            <tr><td><code>e2e/</code></td><td>Eight Playwright specs against the live deployment.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1007,7 +1090,7 @@ expect(Math.abs(Number(stored!.score) - expected.score)).toBeLessThanOrEqual(0.0
 
     <!-- 9 -->
     <section id="bugs">
-      <h2><span class="num">12</span>Bugs found, and how</h2>
+      <h2><span class="num">13</span>Bugs found, and how</h2>
       <p class="lede">Nine real defects. Some from the tests, some from looking at the running application, and the most serious ones from running a full-size demo rather than reading code.</p>
 
       <div class="wide">
@@ -1123,7 +1206,7 @@ expect(Math.abs(Number(stored!.score) - expected.score)).toBeLessThanOrEqual(0.0
 
     <!-- 10 -->
     <section id="defence">
-      <h2><span class="num">13</span>Defending it</h2>
+      <h2><span class="num">14</span>Defending it</h2>
       <p class="lede">The questions most likely to come, and the honest answer to each.</p>
 
       <div class="qa">

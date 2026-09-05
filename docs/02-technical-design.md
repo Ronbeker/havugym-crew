@@ -27,9 +27,9 @@
 ┌──────────────────────────────────────────────────────────┐
 │  Supabase — PostgreSQL, אזור eu-central-1 (פרנקפורט)      │
 │  ├─ Auth (GoTrue)                                        │
-│  ├─ 14 טבלאות + 2 views                                  │
-│  ├─ 20 RLS policies  ← ההרשאות האמיתיות חיות כאן          │
-│  └─ 13 functions      ← כל כתיבה שנוגעת ביותר משורה אחת   │
+│  ├─ 15 טבלאות + 3 views                                  │
+│  ├─ 21 RLS policies  ← ההרשאות האמיתיות חיות כאן          │
+│  └─ 15 functions      ← כל כתיבה שנוגעת ביותר משורה אחת   │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -71,7 +71,7 @@ havugym-crew/
 │   │   ├── queries.ts     ← כל הקריאות
 │   │   └── database.types.ts  ← נוצר מהסכמה (npx supabase gen types)
 │   └── middleware.ts
-├── supabase/migrations/                 10 מיגרציות, מסודרות
+├── supabase/migrations/                 11 מיגרציות, מסודרות
 ├── tests/                               unit + integration
 ├── e2e/                                 Playwright
 └── docs/                                המסמכים המוגשים
@@ -88,7 +88,7 @@ havugym-crew/
 | `/` | לא | RSC | דף נחיתה. מפנה ל-`/feed` אם יש session |
 | `/login` | לא | RSC + Client | התחברות והרשמה, טאב אחד לכל אחד |
 | `/onboarding` | כן | RSC + Client | יצירת חבורה או הצטרפות בקוד. חסום למי שכבר בחבורה |
-| `/feed` | כן | RSC | ה-feed של החבורה + כרטיס ההמלצה + pagination |
+| `/feed` | כן | RSC + Client | **באנר "מי במכון עכשיו"** + ה-feed + המלצה + pagination |
 | `/log` | כן | RSC + Client | רישום אימון עם ציון חזוי חי |
 | `/workouts/[id]` | כן | RSC | אימון בודד, סטים מלאים, מחיקה לבעלים |
 | `/crew` | כן | RSC | חברים, קוד הזמנה, אתגר, תחרות. **מפעיל סגירת שבועות** |
@@ -113,11 +113,19 @@ havugym-crew/
 | `invite-code.tsx` | Client | הצגה והעתקה. נכשל בשקט כשאין clipboard |
 | `crew-switcher.tsx` | Client | החלפת חבורה פעילה + `router.refresh()` |
 | `destructive-button.tsx` | Client | אישור דו-שלבי במקום `window.confirm` |
+| `arrival-banner.tsx` | Client | "מי במכון עכשיו". האות מחושב בשרת ויורד מוכן — ראו למטה |
 | `workout-logger.tsx` | Client | **ה-state המורכב היחיד באפליקציה** |
 | `login-form.tsx` | Client | שני `useActionState` נפרדים, כדי ששגיאות לא יעברו בין הטאבים |
 | `onboarding-form.tsx` | Client | אותו דפוס, ליצירה מול הצטרפות |
 | `shop-actions.tsx` | Client | `ItemButton` — קנייה או ציוד לפי מצב הבעלות |
 | `buy-pack.tsx` | Client | פתיחת Stripe Checkout והפניה |
+
+**למה האות של ההגעות מחושב בשרת:** חישוב מחדש בלקוח מחייב `new Date()` בזמן רינדור, מה שמייצר
+מחרוזת אחרת בשרת ובדפדפן — hydration mismatch בקומפוננטה שכל תפקידה הוא להיות אמינה. השרת מחשב
+את הכותרת, תת-הכותרת והדקות שנותרו, והלקוח אחראי רק לכפתורים ולרענון.
+
+**למה polling ולא Realtime:** websocket הוא עוד חיבור, עוד מצב כשל ועוד נושא במסמך האבטחה — בתמורה
+להשהיה שאיש מהמחליטים אם ללכת לחדר כושר אינו מסוגל להבחין בה. דקה אינה איחור.
 
 **למה `SubmitButton` היא קומפוננטה נפרדת:** `useFormStatus` קורא את מצב ה-`<form>` העוטף. קריאה שלו מתוך הקומפוננטה שמרנדרת את הטופס מחזירה `pending: false` תמיד — הוא חייב לחיות בתוך הטופס, לא סביבו.
 
@@ -143,6 +151,7 @@ havugym-crew/
 | 12 | `shop_items` | קטלוג קוסמטי |
 | 13 | `inventory` | בעלות + מה מצויד |
 | 14 | `orders` | רכישות בכסף אמיתי |
+| 15 | `arrivals` | "אני במכון" — המשטח הפרוספקטיבי היחיד |
 
 ### 3.2 יחסים
 
@@ -192,8 +201,9 @@ check ((status='settled' and settled_at is not null)
 |---|---|
 | `workout_feed` | אימון + שם המחבר + מספר סטים + נפח + שרירים — בשאילתה אחת |
 | `weekly_user_stats` | אגרגציה לפי חבר / חבורה / שבוע |
+| `active_arrivals` | מי בחוץ **עכשיו** — מסונן על `closed_at is null and expires_at > now()` |
 
-שתיהן `security_invoker = on`. **זה קריטי:** view רגיל רץ בהרשאות ה־owner ולכן **עוקף RLS** על כל טבלה שמתחתיו. view על `workouts` שנכתב בברירת המחדל היה מגיש לכל אחד את האימונים של כל החבורות — עקיפה מלאה שנוצרת מעצם הוספת view.
+שלושתן `security_invoker = on`. **זה קריטי:** view רגיל רץ בהרשאות ה־owner ולכן **עוקף RLS** על כל טבלה שמתחתיו. view על `workouts` שנכתב בברירת המחדל היה מגיש לכל אחד את האימונים של כל החבורות — עקיפה מלאה שנוצרת מעצם הוספת view.
 
 ---
 
@@ -278,6 +288,8 @@ Client Component → Server Action
 | `joinHavuraAction` | code | `join_havura()` |
 | `switchHavuraAction` | havuraId | החלפת חבורה פעילה |
 | `leaveHavuraAction` | havuraId | עזיבה |
+| `announceArrivalAction` | havuraId, status, note | `announce_arrival()` |
+| `closeArrivalAction` | havuraId | `close_arrival()` |
 | `logWorkoutAction` | title, when, minutes, sets[] | `log_workout()` |
 | `deleteWorkoutAction` | workoutId | מחיקה (RLS מגבילה לשלי) |
 | `searchExercisesAction` | term | חיפוש בקטלוג |
@@ -296,7 +308,7 @@ Client Component → Server Action
 
 | פונקציה | הרשאה |
 |---|---|
-| `create_havura`, `join_havura`, `log_workout`, `purchase_shop_item`, `equip_item` | `authenticated` |
+| `create_havura`, `join_havura`, `log_workout`, `purchase_shop_item`, `equip_item`, `announce_arrival`, `close_arrival` | `authenticated` |
 | `apply_creatine`, `compute_workout_score`, `generate_invite_code` | **פנימיות** — הורשו רק ל-service role |
 | `is_havura_member`, `is_havura_owner`, `shares_havura_with` | עוזרות ל-policies |
 | `handle_new_user` | טריגר |
@@ -314,6 +326,7 @@ Client Component → Server Action
 | קריאטין | `apply_creatine()` | שלי בלבד | **בלתי אפשרי** — append-only | **בלתי אפשרי** |
 | מלאי | `purchase_shop_item()` | שלי | `equip_item()` | — |
 | הזמנה | `startCheckoutAction` | שלי | webhook בלבד | — |
+| הגעה | `announce_arrival()` | כל החבורה, בזמן החלון | `close_arrival()` / אוטומטית ברישום | — |
 
 **שלוש עמודות ריקות במכוון:** ה-ledger לא ניתן לעדכון ולא למחיקה, בשום מסלול. זו התכונה שמגדירה אותו.
 
@@ -353,7 +366,16 @@ Coverage 0–20 : 4 לכל שריר ראשי שונה, עד 20
 
 השבוע רץ **ראשון–שבת בשעון ישראל**. אימון ב-01:00 ביום ראשון בישראל הוא 22:00 בשבת ב-UTC; חלוקה לפי תאריך UTC הייתה משייכת אותו לשבוע שכבר נסגר. זה לא היפותטי — בדיוק הבאג הזה קרה במערכת הפרודקשן של HavuGym.
 
-### 8.4 המלצה — `recommendation.ts`
+### 8.4 אות העדר — `arrival.ts`
+
+הפונקציה `herdSignal()` היא כל המנגנון מסעיף 2.2 במסמך המוצר, בקוד:
+
+- **מסננת הגעות שפגו** לפי הזמן שהועבר אליה (טהורה, ולכן ניתנת לבדיקה בכל נקודת זמן).
+- **מוציאה את הצופה מהספירה** — העדר הוא אנשים אחרים.
+- **מקדימה מי שכבר במכון** על פני מי שבדרך: עובדה חזקה מכוונה.
+- **מסלימה את הניסוח** לפי המספר, ומפסיקה לנקוב בשמות מעל שניים.
+
+### 8.5 המלצה — `recommendation.ts`
 
 לא מודל. שני כללים קריאים: השריר שהוזנח הכי הרבה זמן, וקצב מול האתגר לפי **הימים שחלפו** — כך שיום שלישי ויום שישי נותנים עצה שונה.
 

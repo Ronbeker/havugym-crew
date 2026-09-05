@@ -37,7 +37,7 @@ Or join their crew with invite code **`DEMO01`**.
 |---|---|
 | Framework | Next.js 16 (App Router, React Server Components) |
 | Language | TypeScript, `strict` |
-| Database | Supabase (PostgreSQL) with Row Level Security |
+| Database | Supabase (PostgreSQL) with Row Level Security — 15 tables, 3 views, 21 policies |
 | Auth | Supabase Auth (email + password) |
 | Payments | Stripe Checkout, test mode |
 | Styling | Tailwind CSS v4 |
@@ -105,6 +105,9 @@ This applies, in order:
 | `0003_functions.sql` | The write path — every RPC and trigger |
 | `0004_seed_exercises.sql` | 660-exercise catalogue |
 | `0005_seed_shop.sql` | Cosmetic shop catalogue |
+| `0006_views.sql` | Read models (`security_invoker`) |
+| `0007`–`0010` | Fixes: name truncation, view grants, account deletion, feed cursor |
+| `0011_arrivals.sql` | Gym arrivals — the prospective surface |
 
 ### 5. Run
 
@@ -150,8 +153,8 @@ arrow keys or space to advance, `Home` / `End` to jump.
 ## Tests
 
 ```bash
-npm test                 # 95 unit — pure domain logic, offline
-npm run test:integration # 35 against the real database, incl. 22 RLS attacks
-npm run test:e2e         #  6 end-to-end against the live deployment
+npm test                 # 110 unit — pure domain logic, offline
+npm run test:integration # 46 against the real database, incl. 22 RLS attacks
+npm run test:e2e         #  8 end-to-end against the live deployment
 npm run db:verify        # 12 schema invariants the security doc claims
 ```

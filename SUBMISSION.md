@@ -28,7 +28,7 @@
 אפשר גם להירשם עם כל כתובת ולהצטרף לחבורה עם קוד ההזמנה **`DEMO01`**.
 
 **מסלול מומלץ להתרשמות:**
-`/feed` (המלצה + אימונים מדורגים) ← `/crew` (אתגר, תחרות, קופה שמתחלקת ל-350/100/50) ←
+`/feed` (**מי במכון עכשיו** + המלצה + אימונים מדורגים) ← `/crew` (אתגר, תחרות, קופה שמתחלקת ל-350/100/50) ←
 `/log` (חיפוש בקטלוג של 660 תרגילים, ציון חזוי שמתעדכן חי) ← `/shop` ← `/me` (ה-ledger)
 
 ---
@@ -42,7 +42,7 @@
 | 3 | מסמך אפיון מוצר | [`docs/01-product-spec.md`](./docs/01-product-spec.md) |
 | 4 | מסמך תכנון טכני | [`docs/02-technical-design.md`](./docs/02-technical-design.md) |
 | 5 | מסמך אפיון בדיקות | [`docs/03-test-spec.md`](./docs/03-test-spec.md) |
-| 6 | קוד הבדיקות | [`tests/`](./tests) · [`e2e/`](./e2e) — 136 בדיקות |
+| 6 | קוד הבדיקות | [`tests/`](./tests) · [`e2e/`](./e2e) — 164 בדיקות |
 | 7 | מסמך סקייל בסיסי | [`docs/04-scale.md`](./docs/04-scale.md) |
 | 8 | מסמך אבטחה בסיסית | [`docs/05-security.md`](./docs/05-security.md) |
 | 9 | הוראות הרצה מקומית | [`README.md`](./README.md) · וגם למטה |
@@ -92,9 +92,9 @@ Stripe אופציונלי: בלי המפתחות החנות עובדת במלו�
 ### הרצת הבדיקות
 
 ```bash
-npm test                   # 95 unit — לוגיקה טהורה, ללא רשת
-npm run test:integration   # 35 מול המסד האמיתי (22 מהן תקיפות הרשאה)
-npm run test:e2e           #  6 מקצה לקצה מול הפריסה החיה
+npm test                   # 110 unit — לוגיקה טהורה, ללא רשת
+npm run test:integration   # 46 מול המסד האמיתי (22 מהן תקיפות הרשאה)
+npm run test:e2e           #  8 מקצה לקצה מול הפריסה החיה
 npm run db:verify          # 12 אינווריאנטים של הסכמה
 npm run test:all           # הכול
 ```
@@ -107,11 +107,11 @@ npm run test:all           # הכול
 |---|---|
 | Framework | Next.js 16 — App Router, React Server Components |
 | שפה | TypeScript, `strict` |
-| מסד נתונים | Supabase / PostgreSQL — 14 טבלאות, 2 views, **20 RLS policies**, 13 functions |
+| מסד נתונים | Supabase / PostgreSQL — 15 טבלאות, 3 views, **21 RLS policies**, 15 functions |
 | אימות | Supabase Auth (אימייל וסיסמה) |
 | תשלומים | Stripe Checkout, test mode |
 | עיצוב | Tailwind CSS v4 |
-| בדיקות | Vitest · Playwright — **136 בדיקות** |
+| בדיקות | Vitest · Playwright — **164 בדיקות** |
 | אירוח | Vercel, אזור `fra1` — באותו אזור כמו המסד |
 
 ### שלוש נקודות שכדאי להסתכל עליהן
