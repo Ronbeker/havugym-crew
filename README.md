@@ -11,6 +11,7 @@ cooperative challenge and a competitive ranking, both of which pay out in
 **Live:** <https://havugym-crew.vercel.app>
 
 Built for *Internet Technologies*, RUNI CS 2026.
+Everything required for the submission is indexed in **[SUBMISSION.md](./SUBMISSION.md)**.
 
 ### Try it
 

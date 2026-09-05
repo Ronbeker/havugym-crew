@@ -23,17 +23,30 @@ const admin = () =>
 export const unique = () => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 /**
- * Creates a confirmed account, then signs in THROUGH THE UI.
+ * Signs up through the real form.
  *
- * The account is provisioned with the admin API rather than the signup form for
- * a specific reason: this project has email confirmation enabled, and Supabase's
- * built-in mailer allows two messages an hour. Driving the signup form would
- * make the entire suite depend on an inbox and a rate limit — flaky by design,
- * and slower every run.
+ * Email confirmation is disabled on this project, so signUp returns a session
+ * immediately and the journey continues straight into onboarding. This is the
+ * path a real user takes, so it is the path the suite takes.
+ */
+export async function signUpThroughForm(page: Page, name: string) {
+  const email = `${name.toLowerCase()}-${unique()}${E2E_DOMAIN}`;
+
+  await page.goto('/login');
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await page.getByLabel('Name').fill(name);
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByRole('button', { name: 'Create account' }).last().click();
+
+  return email;
+}
+
+/**
+ * Provisions a confirmed account through the admin API, then signs in via the UI.
  *
- * The signup form itself is still covered: by the schema unit tests, and by the
- * spec below that asserts it correctly asks the user to confirm their email.
- * Everything after authentication is exercised through the real interface.
+ * Used where a test needs a second account and the signup path is not what is
+ * under test — it is a couple of seconds faster and keeps the assertion focused.
  */
 export async function signInAs(page: Page, name: string) {
   const email = `${name.toLowerCase()}-${unique()}${E2E_DOMAIN}`;

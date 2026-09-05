@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { signInAs, unique } from './helpers';
+import { signInAs, signUpThroughForm, unique } from './helpers';
 
 /**
  * The critical path, end to end, against the deployed application.
@@ -9,8 +9,9 @@ import { signInAs, unique } from './helpers';
  * Splitting it would re-run expensive setup per test and stop testing the seams,
  * which are what actually break.
  */
-test('a member can start a crew, log a scored session, and see it in the feed', async ({ page }) => {
-  await signInAs(page, 'Riley');
+test('a member can sign up, start a crew, log a scored session, and see it in the feed', async ({ page }) => {
+  // Signs up through the real form — the exact path a new user takes.
+  await signUpThroughForm(page, 'Riley');
 
   // ---- onboarding -------------------------------------------------------
   await expect(page).toHaveURL(/\/onboarding/, { timeout: 30_000 });
@@ -57,6 +58,11 @@ test('a member can start a crew, log a scored session, and see it in the feed', 
   // ---- it appears in the crew feed --------------------------------------
   await page.goto('/feed');
   await expect(page.getByText('E2E push day')).toBeVisible();
+
+  // ---- the profile shows the untruncated name --------------------------
+  await page.goto('/me');
+  await expect(page.getByRole('heading', { name: 'Riley' })).toBeVisible();
+  await expect(page.getByText('Welcome bonus')).toBeVisible();
 
   // ---- the wallet gates what can be bought ------------------------------
   await page.goto('/shop');
