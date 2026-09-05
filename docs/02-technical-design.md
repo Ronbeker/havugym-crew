@@ -79,6 +79,48 @@ havugym-crew/
 
 **כלל הארגון:** `lib/domain` לא מייבא כלום מ-`lib/supabase`. הכיוון תמיד חד-סטרי — שכבות חיצוניות מייבאות פנימה, לעולם לא להפך. זה מה שמאפשר לבדוק את כל הלוגיקה העסקית בלי מסד נתונים.
 
+### 2.1 העמודים באפליקציה
+
+13 נתיבים. אחד עשר דפים ושני route handlers.
+
+| נתיב | דורש session | סוג | תפקיד |
+|---|---|---|---|
+| `/` | לא | RSC | דף נחיתה. מפנה ל-`/feed` אם יש session |
+| `/login` | לא | RSC + Client | התחברות והרשמה, טאב אחד לכל אחד |
+| `/onboarding` | כן | RSC + Client | יצירת חבורה או הצטרפות בקוד. חסום למי שכבר בחבורה |
+| `/feed` | כן | RSC | ה-feed של החבורה + כרטיס ההמלצה + pagination |
+| `/log` | כן | RSC + Client | רישום אימון עם ציון חזוי חי |
+| `/workouts/[id]` | כן | RSC | אימון בודד, סטים מלאים, מחיקה לבעלים |
+| `/crew` | כן | RSC | חברים, קוד הזמנה, אתגר, תחרות. **מפעיל סגירת שבועות** |
+| `/shop` | כן | RSC + Client | קטלוג קוסמטי, רכישה, ציוד, חבילות קריאטין |
+| `/shop/success` | כן | RSC | חזרה מ-Stripe; מזכה אם ה-webhook טרם הגיע |
+| `/me` | כן | RSC + Client | פרופיל, סטטיסטיקה, ledger, מחליף חבורות, עזיבה, התנתקות |
+| `/api/health` | לא | Route | בדיקת פריסה — קונפיגורציה, מסד, ואכיפת RLS |
+| `/api/stripe/webhook` | לא | Route | קליטת אירועי תשלום עם אימות חתימה |
+
+**רוב הדפים הם Server Components.** לקוח נטען רק היכן שיש אינטראקטיביות אמיתית — הלוגר, טפסי ההתחברות וההצטרפות, כפתורי החנות, מחליף החבורות והפעולות ההרסניות.
+
+### 2.2 מבנה הקומפוננטות
+
+**עיקרון:** ה-RSC שואב את הנתונים ומעביר אותם למטה. Client Component מקבל props ומחזיק state — הוא לעולם לא שולף בעצמו.
+
+| קומפוננטה | סוג | תפקיד |
+|---|---|---|
+| `app-nav.tsx` | Client | ניווט. Client רק בגלל `usePathname` להדגשת הטאב |
+| `workout-card.tsx` | Server | כרטיס אימון ב-feed. ללא state, ולכן ללא JS בצד הלקוח |
+| `icons.tsx` | Server | 14 אייקוני SVG על רשת 24, יורשים `currentColor` |
+| `form.tsx` | Client | `SubmitButton` (דרך `useFormStatus`), `FieldError`, `FormError` |
+| `invite-code.tsx` | Client | הצגה והעתקה. נכשל בשקט כשאין clipboard |
+| `crew-switcher.tsx` | Client | החלפת חבורה פעילה + `router.refresh()` |
+| `destructive-button.tsx` | Client | אישור דו-שלבי במקום `window.confirm` |
+| `workout-logger.tsx` | Client | **ה-state המורכב היחיד באפליקציה** |
+| `login-form.tsx` | Client | שני `useActionState` נפרדים, כדי ששגיאות לא יעברו בין הטאבים |
+| `onboarding-form.tsx` | Client | אותו דפוס, ליצירה מול הצטרפות |
+| `shop-actions.tsx` | Client | `ItemButton` — קנייה או ציוד לפי מצב הבעלות |
+| `buy-pack.tsx` | Client | פתיחת Stripe Checkout והפניה |
+
+**למה `SubmitButton` היא קומפוננטה נפרדת:** `useFormStatus` קורא את מצב ה-`<form>` העוטף. קריאה שלו מתוך הקומפוננטה שמרנדרת את הטופס מחזירה `pending: false` תמיד — הוא חייב לחיות בתוך הטופס, לא סביבו.
+
 ---
 
 ## 3. מסד הנתונים
