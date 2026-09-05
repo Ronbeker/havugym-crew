@@ -37,13 +37,35 @@ export async function GET() {
     const admin = createAdminClient();
     const started = Date.now();
 
-    const [exercises, shopItems] = await Promise.all([
-      admin.from('exercises').select('*', { count: 'exact', head: true }),
-      admin.from('shop_items').select('*', { count: 'exact', head: true }),
-    ]);
+    /**
+     * Counts, with one retry.
+     *
+     * The FIRST request after a new deployment failed on every deploy observed —
+     * a cold function issuing two parallel HEAD requests, one of which came back
+     * with an empty error. Every subsequent request succeeded. That is a cold
+     * connection, not a broken deployment, and failing the health check for it
+     * would mean the endpoint reports unhealthy exactly when someone has just
+     * shipped and is most likely to be looking at it.
+     *
+     * The retry is bounded at one and the fact that it happened is REPORTED
+     * rather than swallowed — a health check that quietly hides flakiness is
+     * worse than no health check.
+     */
+    let coldStartRetry = false;
+    const counts = async () =>
+      Promise.all([
+        admin.from('exercises').select('*', { count: 'exact', head: true }),
+        admin.from('shop_items').select('*', { count: 'exact', head: true }),
+      ]);
 
-    if (exercises.error) throw new Error(`exercises: ${exercises.error.message}`);
-    if (shopItems.error) throw new Error(`shop_items: ${shopItems.error.message}`);
+    let [exercises, shopItems] = await counts();
+    if (exercises.error || shopItems.error) {
+      coldStartRetry = true;
+      [exercises, shopItems] = await counts();
+    }
+
+    if (exercises.error) throw new Error(`exercises: ${exercises.error.message || 'no detail'}`);
+    if (shopItems.error) throw new Error(`shop_items: ${shopItems.error.message || 'no detail'}`);
 
     // Deliberately a raw fetch rather than a Supabase client: we want the HTTP
     // status the anonymous role actually receives, not a wrapped error object.
@@ -62,6 +84,7 @@ export async function GET() {
 
     body.db = {
       reachable: true,
+      coldStartRetry,
       latencyMs: Date.now() - started,
       exercises: exercises.count,
       shopItems: shopItems.count,
