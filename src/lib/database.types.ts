@@ -9,6 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      arrivals: {
+        Row: {
+          announced_at: string
+          closed_at: string | null
+          expires_at: string
+          havura_id: string
+          id: string
+          note: string | null
+          status: Database["public"]["Enums"]["arrival_status"]
+          user_id: string
+          workout_id: string | null
+        }
+        Insert: {
+          announced_at?: string
+          closed_at?: string | null
+          expires_at: string
+          havura_id: string
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["arrival_status"]
+          user_id: string
+          workout_id?: string | null
+        }
+        Update: {
+          announced_at?: string
+          closed_at?: string | null
+          expires_at?: string
+          havura_id?: string
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["arrival_status"]
+          user_id?: string
+          workout_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arrivals_havura_id_fkey"
+            columns: ["havura_id"]
+            isOneToOne: false
+            referencedRelation: "havuras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arrivals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arrivals_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workout_feed"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arrivals_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_progress: {
         Row: {
           challenge_id: string
@@ -572,6 +637,34 @@ export type Database = {
       }
     }
     Views: {
+      active_arrivals: {
+        Row: {
+          announced_at: string | null
+          display_name: string | null
+          expires_at: string | null
+          havura_id: string | null
+          id: string | null
+          note: string | null
+          status: Database["public"]["Enums"]["arrival_status"] | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arrivals_havura_id_fkey"
+            columns: ["havura_id"]
+            isOneToOne: false
+            referencedRelation: "havuras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arrivals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_user_stats: {
         Row: {
           havura_id: string | null
@@ -635,6 +728,14 @@ export type Database = {
       }
     }
     Functions: {
+      announce_arrival: {
+        Args: {
+          p_havura_id: string
+          p_note?: string
+          p_status?: Database["public"]["Enums"]["arrival_status"]
+        }
+        Returns: string
+      }
       apply_creatine: {
         Args: {
           p_delta: number
@@ -645,6 +746,7 @@ export type Database = {
         }
         Returns: number
       }
+      close_arrival: { Args: { p_havura_id: string }; Returns: undefined }
       compute_workout_score: { Args: { p_workout_id: string }; Returns: number }
       create_havura: { Args: { p_name: string }; Returns: string }
       equip_item: { Args: { p_item_id: number }; Returns: undefined }
@@ -667,6 +769,7 @@ export type Database = {
       shares_havura_with: { Args: { p_user_id: string }; Returns: boolean }
     }
     Enums: {
+      arrival_status: "on_the_way" | "training"
       challenge_kind: "workout_count" | "total_volume" | "muscle_coverage"
       competition_metric: "total_score" | "workout_count" | "total_volume"
       competition_status: "open" | "settled"
@@ -838,6 +941,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      arrival_status: ["on_the_way", "training"],
       challenge_kind: ["workout_count", "total_volume", "muscle_coverage"],
       competition_metric: ["total_score", "workout_count", "total_volume"],
       competition_status: ["open", "settled"],

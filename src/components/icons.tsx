@@ -104,3 +104,18 @@ export const SpinnerIcon = ({ className }: IconProps) => (
     <path d="M12 3a9 9 0 1 0 9 9" />
   </svg>
 );
+
+export const ArrivalIcon = ({ className }: IconProps) => (
+  <svg {...base(className)}>
+    <path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z" />
+    <circle cx="12" cy="10" r="2.5" />
+  </svg>
+);
+
+export const WalkIcon = ({ className }: IconProps) => (
+  <svg {...base(className)}>
+    <circle cx="13" cy="4.5" r="1.8" />
+    <path d="M11 21l1.8-5.2L10 13l1-5 3.2 2.2L17 11" />
+    <path d="M10 8L7 10.5M12.8 15.8L15 21" />
+  </svg>
+);

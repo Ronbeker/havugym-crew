@@ -71,6 +71,54 @@ test('a member can sign up, start a crew, log a scored session, and see it in th
   await expect(page.getByRole('button', { name: '150', exact: true })).toBeDisabled();
 });
 
+test('announcing an arrival is visible, and closes when the session is logged', async ({ page }) => {
+  await signInAs(page, 'Robin');
+  await expect(page).toHaveURL(/\/onboarding/, { timeout: 30_000 });
+  await page.getByLabel('Crew name').fill(`Arrival Crew ${unique()}`);
+  await page.getByRole('button', { name: 'Create crew' }).click();
+  await expect(page).toHaveURL(/\/crew/, { timeout: 30_000 });
+
+  await page.goto('/feed');
+
+  // An empty gym is a real state, and it asks for the first mover.
+  await expect(page.getByText('Nobody is at the gym')).toBeVisible();
+
+  await page.getByRole('button', { name: "I'm at the gym" }).click();
+
+  // One person out is still a signal — to everyone else.
+  await expect(page.getByText('You are the only one out')).toBeVisible();
+  await expect(page.getByText('Robin (you)')).toBeVisible();
+
+  // Logging the session it led to must end the arrival, without being asked.
+  await page.goto('/log');
+  await page.getByLabel('Session').fill('Arrival session');
+  await page.getByLabel('Minutes').fill('40');
+  await page.getByLabel('Add an exercise').fill('Barbell Bench Press');
+  await page.getByRole('button', { name: /^Barbell Bench Press/ }).first().click();
+  await page.getByLabel('Set 1 weight in kilograms').fill('60');
+  await page.getByLabel('Set 1 repetitions').fill('10');
+  await page.getByRole('button', { name: /Save session/ }).click();
+  await expect(page).toHaveURL(/\/workouts\//, { timeout: 30_000 });
+
+  await page.goto('/feed');
+  await expect(page.getByText('Nobody is at the gym')).toBeVisible();
+});
+
+test('an arrival can be called off without logging anything', async ({ page }) => {
+  await signInAs(page, 'Sam');
+  await expect(page).toHaveURL(/\/onboarding/, { timeout: 30_000 });
+  await page.getByLabel('Crew name').fill(`Called Off ${unique()}`);
+  await page.getByRole('button', { name: 'Create crew' }).click();
+  await expect(page).toHaveURL(/\/crew/, { timeout: 30_000 });
+
+  await page.goto('/feed');
+  await page.getByRole('button', { name: 'On my way' }).click();
+  await expect(page.getByText('Sam (you)')).toBeVisible();
+
+  await page.getByRole('button', { name: "I'm done" }).click();
+  await expect(page.getByText('Nobody is at the gym')).toBeVisible();
+});
+
 test('an empty session cannot be saved', async ({ page }) => {
   await signInAs(page, 'Jordan');
   await expect(page).toHaveURL(/\/onboarding/, { timeout: 30_000 });

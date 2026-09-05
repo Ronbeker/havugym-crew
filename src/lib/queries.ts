@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/database.types';
+import type { ActiveArrival } from '@/lib/domain/arrival';
 
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type FeedRow = Database['public']['Views']['workout_feed']['Row'];
@@ -8,6 +9,7 @@ export type WeeklyStat = Database['public']['Views']['weekly_user_stats']['Row']
 export type Exercise = Database['public']['Tables']['exercises']['Row'];
 export type ShopItem = Database['public']['Tables']['shop_items']['Row'];
 export type LedgerRow = Database['public']['Tables']['creatine_ledger']['Row'];
+export type ArrivalRow = Database['public']['Views']['active_arrivals']['Row'];
 
 /** Which crew the UI is currently showing, for members of more than one. */
 export const ACTIVE_HAVURA_COOKIE = 'active_havura';
@@ -276,4 +278,35 @@ export async function getMuscleTouches(userId: string, sinceDays = 28) {
     muscle,
     daysAgo: Math.floor((Date.now() - new Date(at).getTime()) / 86_400_000),
   }));
+}
+
+/**
+ * Who from this crew is at the gym right now.
+ *
+ * The view already filters on `closed_at is null and expires_at > now()`, so
+ * expiry is decided by the database clock rather than by whichever server
+ * happened to render the page. That matters: with expiry computed in the
+ * application, two members loading the feed a second apart could disagree about
+ * whether someone is still out.
+ */
+export async function getActiveArrivals(havuraId: string): Promise<ActiveArrival[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from('active_arrivals')
+    .select('*')
+    .eq('havura_id', havuraId)
+    .order('announced_at', { ascending: true });
+
+  return (data ?? [])
+    .filter((row): row is ArrivalRow & { id: string; user_id: string } =>
+      Boolean(row.id && row.user_id))
+    .map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      displayName: row.display_name ?? 'Someone',
+      status: row.status ?? 'training',
+      note: row.note,
+      announcedAt: row.announced_at ?? new Date().toISOString(),
+      expiresAt: row.expires_at ?? new Date().toISOString(),
+    }));
 }

@@ -3,10 +3,13 @@ import { redirect } from 'next/navigation';
 import { WorkoutCard } from '@/components/workout-card';
 import { LogIcon, TargetIcon } from '@/components/icons';
 import {
-  getActiveHavura, getCrewFeed, getMuscleTouches, getProfile, getWeeklyStats,
+  getActiveArrivals, getActiveHavura, getCrewFeed, getMuscleTouches, getProfile,
+  getWeeklyStats,
 } from '@/lib/queries';
 import { challengeForWeek, progressFromWeeklyStat } from '@/lib/domain/challenge';
 import { suggestNextSession } from '@/lib/domain/recommendation';
+import { herdSignal, minutesRemaining } from '@/lib/domain/arrival';
+import { ArrivalBanner } from './arrival-banner';
 import { weekStartOf, dayOfWeekOf } from '@/lib/domain/time';
 
 export const metadata = { title: 'Feed · HavuGym Crew' };
@@ -21,11 +24,25 @@ export default async function FeedPage({
   if (!profile || !havura) redirect('/onboarding');
 
   const weekStart = weekStartOf(new Date());
-  const [{ rows, nextCursor }, touches, stats] = await Promise.all([
+  const [{ rows, nextCursor }, touches, stats, arrivals] = await Promise.all([
     getCrewFeed(havura.id, { before }),
     getMuscleTouches(profile.id),
     getWeeklyStats(havura.id, weekStart),
+    getActiveArrivals(havura.id),
   ]);
+
+  // Computed here, on the server, and handed down finished — see the note in
+  // arrival-banner.tsx about hydration.
+  const now = new Date();
+  const signal = herdSignal(arrivals, profile.id, now);
+  const arrivalViews = arrivals.map((arrival) => ({
+    id: arrival.id,
+    displayName: arrival.displayName,
+    status: arrival.status,
+    note: arrival.note,
+    minutesLeft: minutesRemaining(arrival.expiresAt, now),
+    isViewer: arrival.userId === profile.id,
+  }));
 
   const definition = challengeForWeek(weekStart);
   const mine = stats.find((s) => s.user_id === profile.id);
@@ -46,6 +63,10 @@ export default async function FeedPage({
         <h1 className="text-xl font-semibold tracking-tight">{havura.name}</h1>
         <Link href="/log" className="text-sm font-medium text-accent">Log a session</Link>
       </div>
+
+      {/* Prospective first, retrospective below: what you can still act on
+          outranks what has already happened. */}
+      <ArrivalBanner signal={signal} arrivals={arrivalViews} havuraId={havura.id} />
 
       <section className="card" aria-labelledby="next-session">
         <div className="flex items-center gap-2 text-accent">

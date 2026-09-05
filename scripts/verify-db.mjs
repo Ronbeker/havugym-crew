@@ -24,9 +24,10 @@ const client = new pg.Client({
 await client.connect();
 
 const checks = [
-  ['tables',            `select count(*)::int v from information_schema.tables where table_schema='public' and table_type='BASE TABLE'`, 14],
-  ['enums',             `select count(*)::int v from pg_type where typtype='e' and typnamespace='public'::regnamespace`, 11],
-  ['rls policies',      `select count(*)::int v from pg_policies where schemaname='public'`, 20],
+  ['tables',            `select count(*)::int v from information_schema.tables where table_schema='public' and table_type='BASE TABLE'`, 15],
+  ['views',             `select count(*)::int v from information_schema.views where table_schema='public'`, 3],
+  ['enums',             `select count(*)::int v from pg_type where typtype='e' and typnamespace='public'::regnamespace`, 12],
+  ['rls policies',      `select count(*)::int v from pg_policies where schemaname='public'`, 21],
   ['functions',         `select count(*)::int v from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public'`, null],
   ['indexes',           `select count(*)::int v from pg_indexes where schemaname='public'`, null],
   ['exercises seeded',  `select count(*)::int v from public.exercises`, 660],
@@ -57,6 +58,14 @@ const invariants = [
   ['authenticated cannot UPDATE profiles.creatine_balance',
    `select coalesce(string_agg(privilege_type, ', '), '') v from information_schema.column_privileges
     where grantee='authenticated' and table_name='profiles' and column_name='creatine_balance' and privilege_type='UPDATE'`],
+  ['at most one open arrival per member per crew',
+   `select coalesce(string_agg(user_id::text, ', '), '') v from (
+      select user_id, havura_id from public.arrivals
+      where closed_at is null group by 1,2 having count(*) > 1
+    ) dupes`],
+  ['no arrival expires before it was announced',
+   `select coalesce(string_agg(id::text, ', '), '') v from public.arrivals
+    where expires_at <= announced_at`],
   ['creatine cache matches the ledger',
    `select coalesce(string_agg(p.id::text, ', '), '') v from public.profiles p
     left join (select user_id, sum(delta)::int s from public.creatine_ledger group by 1) l on l.user_id = p.id

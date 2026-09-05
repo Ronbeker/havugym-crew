@@ -103,6 +103,7 @@ async function wipe() {
   // NULL by design (0009), because a crew is a shared object that outlives the
   // account that opened it. So the seed has to clear them explicitly.
   await admin.from('havuras').delete().in('invite_code', ['DEMO01', 'DEMO02']);
+  // arrivals cascade from both the user and the crew, so nothing else to clear.
 
   return targets.length;
 }
@@ -240,6 +241,34 @@ async function main() {
   }
 
   console.log(`logged ${logged} workouts across ${WEEKS} weeks`);
+
+  /**
+   * Three members out right now, so the arrivals banner has something to show.
+   *
+   * Written with the REAL windows the RPC would choose (45 minutes for "on the
+   * way", 150 for "at the gym") rather than a stretched demo window, because an
+   * arrival that never expires would contradict the one property the feature
+   * depends on. Re-run this script shortly before demonstrating, or simply press
+   * "I'm at the gym" — the empty state is a real state with its own call to action.
+   */
+  const out = [
+    { name: 'Dana',  status: 'training',   minutes: 150, note: 'leg day, who is in' },
+    { name: 'Shira', status: 'training',   minutes: 150, note: null },
+    { name: 'Noam',  status: 'on_the_way', minutes: 45,  note: 'ten minutes out' },
+  ];
+  for (const entry of out) {
+    const user = users.find((u) => u.name === entry.name);
+    const announced = new Date(Date.now() - between(3, 25) * 60_000);
+    await admin.from('arrivals').insert({
+      user_id: user.id,
+      havura_id: crew.id,
+      status: entry.status,
+      note: entry.note,
+      announced_at: announced.toISOString(),
+      expires_at: new Date(announced.getTime() + entry.minutes * 60_000).toISOString(),
+    });
+  }
+  console.log(`announced ${out.length} live arrivals`);
   console.log(`\nsign in with any of (password: ${PASSWORD}):`);
   for (const u of users) console.log(`  ${u.email}`);
   console.log(`\ninvite codes: ${crew.invite_code} (${crew.name}), ${crew2.invite_code} (${crew2.name})`);
