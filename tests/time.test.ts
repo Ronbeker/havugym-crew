@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { weekEndOf, weekStartOf } from '@/lib/domain/time';
+import { dayOfWeekOf, weekEndOf, weekStartOf } from '@/lib/domain/time';
 
 describe('weekStartOf', () => {
   it('returns the Sunday of the week', () => {
@@ -38,5 +38,33 @@ describe('weekEndOf', () => {
 
   it('crosses a month boundary', () => {
     expect(weekEndOf('2026-11-29')).toBe('2026-12-05');
+  });
+});
+
+describe('dayOfWeekOf', () => {
+  it('numbers Sunday as 1 and Saturday as 7', () => {
+    expect(dayOfWeekOf(new Date('2026-08-30T12:00:00Z'))).toBe(1); // Sunday
+    expect(dayOfWeekOf(new Date('2026-09-05T12:00:00Z'))).toBe(7); // Saturday
+  });
+
+  it('walks the whole week in order', () => {
+    const days = [0, 1, 2, 3, 4, 5, 6].map((offset) =>
+      dayOfWeekOf(new Date(Date.UTC(2026, 7, 30 + offset, 12))),
+    );
+    expect(days).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  it('uses Israel local time, so a late-night UTC Saturday is already Sunday', () => {
+    expect(dayOfWeekOf(new Date('2026-09-05T22:00:00Z'))).toBe(1);
+  });
+
+  it('agrees with weekStartOf about which week a moment belongs to', () => {
+    // Consistency between the two is what keeps the pace calculation honest.
+    for (const iso of ['2026-08-30T00:30:00Z', '2026-09-02T18:00:00Z', '2026-09-05T20:00:00Z']) {
+      const date = new Date(iso);
+      expect(weekStartOf(date)).toBe('2026-08-30');
+      expect(dayOfWeekOf(date)).toBeGreaterThanOrEqual(1);
+      expect(dayOfWeekOf(date)).toBeLessThanOrEqual(7);
+    }
   });
 });

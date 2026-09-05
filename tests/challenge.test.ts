@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { challengeForWeek, challengeProgress, isChallengeComplete } from '@/lib/domain/challenge';
+import {
+  challengeForWeek, challengeProgress, isChallengeComplete, progressFromWeeklyStat,
+} from '@/lib/domain/challenge';
 
 describe('challengeForWeek', () => {
   it('is deterministic — the same week always yields the same challenge', () => {
@@ -55,5 +57,40 @@ describe('isChallengeComplete', () => {
 
   it('does not complete one unit short', () => {
     expect(isChallengeComplete('total_volume', 20_001, workouts)).toBe(false);
+  });
+});
+
+describe('progressFromWeeklyStat', () => {
+  const stat = { workout_count: 4, total_volume: 18_500, muscles_hit: 5 };
+
+  it('reads the count for workout_count', () => {
+    expect(progressFromWeeklyStat('workout_count', stat)).toBe(4);
+  });
+
+  it('reads the volume for total_volume', () => {
+    expect(progressFromWeeklyStat('total_volume', stat)).toBe(18_500);
+  });
+
+  it('reads the distinct muscle count for muscle_coverage', () => {
+    expect(progressFromWeeklyStat('muscle_coverage', stat)).toBe(5);
+  });
+
+  it('is zero for a member with no row this week', () => {
+    expect(progressFromWeeklyStat('workout_count', undefined)).toBe(0);
+    expect(progressFromWeeklyStat('total_volume', undefined)).toBe(0);
+  });
+
+  it('coerces the numeric column, which arrives as a string over the wire', () => {
+    // Postgres numeric is serialised as a string by PostgREST; comparing that
+    // against a target with >= would compare a string to a number.
+    expect(progressFromWeeklyStat('total_volume', {
+      workout_count: 1, total_volume: '20000', muscles_hit: 2,
+    })).toBe(20_000);
+  });
+
+  it('treats nulls as zero rather than NaN', () => {
+    expect(progressFromWeeklyStat('muscle_coverage', {
+      workout_count: null, total_volume: null, muscles_hit: null,
+    })).toBe(0);
   });
 });

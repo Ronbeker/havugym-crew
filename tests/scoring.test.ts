@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BODYWEIGHT_PROXY_KG, muscleCoverage, percentileCont, round2, scoreWorkout,
-  setWork, workoutVolume, type ScoredSet,
+  BASELINE_WINDOW, BODYWEIGHT_PROXY_KG, COVERAGE_MAX, COVERAGE_PER_MUSCLE,
+  DENSITY_MAX, LOAD_MAX, RATIO_CAP, muscleCoverage, percentileCont, round2,
+  scoreWorkout, setWork, workoutVolume, type ScoredSet,
 } from '@/lib/domain/scoring';
 
 const set = (over: Partial<ScoredSet> = {}): ScoredSet => ({
@@ -89,9 +90,10 @@ describe('scoreWorkout', () => {
       durationMin: 60,
       priors,
     });
-    expect(result.load).toBe(25);
-    expect(result.density).toBe(15);
-    expect(result.coverage).toBe(4);
+    // Half of each ceiling is "exactly your own baseline", by construction.
+    expect(result.load).toBe(LOAD_MAX / RATIO_CAP);
+    expect(result.density).toBe(DENSITY_MAX / RATIO_CAP);
+    expect(result.coverage).toBe(COVERAGE_PER_MUSCLE);
     expect(result.score).toBe(44);
   });
 
@@ -102,21 +104,21 @@ describe('scoreWorkout', () => {
       durationMin: 60,
       priors,
     });
-    expect(result.load).toBe(50);
-    expect(result.density).toBe(30);
+    expect(result.load).toBe(LOAD_MAX);
+    expect(result.density).toBe(DENSITY_MAX);
   });
 
   it('gives a neutral, non-flattering baseline for a first-ever session', () => {
     const result = scoreWorkout({ sets: [set()], durationMin: 60, priors: [] });
     expect(result.usedNeutralBaseline).toBe(true);
-    expect(result.load).toBe(25);
-    expect(result.density).toBe(15);
+    expect(result.load).toBe(LOAD_MAX / RATIO_CAP);
+    expect(result.density).toBe(DENSITY_MAX / RATIO_CAP);
   });
 
   it('caps coverage so a scattergun session cannot farm it', () => {
     const sets = ['chest', 'back', 'legs', 'glutes', 'core', 'biceps', 'triceps']
       .map((musclePrimary) => set({ musclePrimary }));
-    expect(scoreWorkout({ sets, durationMin: 60, priors }).coverage).toBe(20);
+    expect(scoreWorkout({ sets, durationMin: 60, priors }).coverage).toBe(COVERAGE_MAX);
   });
 
   it('never exceeds 100 or drops below 0', () => {
@@ -132,14 +134,16 @@ describe('scoreWorkout', () => {
 
   it('only uses the most recent eight sessions as the baseline', () => {
     // Nine priors: the trailing one is far heavier and must be ignored.
-    const withOldOutlier = [...Array(8).fill({ volume: 1000, durationMin: 60 }),
-      { volume: 999_999, durationMin: 60 }];
+    const withOldOutlier = [
+      ...Array(BASELINE_WINDOW).fill({ volume: 1000, durationMin: 60 }),
+      { volume: 999_999, durationMin: 60 },
+    ];
     const result = scoreWorkout({
       sets: [set({ reps: 20, weightKg: 50 })], // 1000
       durationMin: 60,
       priors: withOldOutlier,
     });
-    expect(result.load).toBe(25);
+    expect(result.load).toBe(LOAD_MAX / RATIO_CAP);
   });
 
   it('is deterministic', () => {

@@ -83,3 +83,34 @@ export function isChallengeComplete(
 ): boolean {
   return challengeProgress(kind, workouts) >= target;
 }
+
+/** The shape `weekly_user_stats` returns, reduced to what a challenge needs. */
+export interface WeeklyStatLike {
+  workout_count: number | null;
+  total_volume: number | string | null;
+  muscles_hit: number | null;
+}
+
+/**
+ * Progress straight from an aggregated weekly row.
+ *
+ * The view already has the counts, so callers had been reconstructing a fake
+ * `WeeklyWorkout[]` to feed challengeProgress — an array of N placeholder
+ * objects to represent a count, which worked and was one refactor away from
+ * being quietly wrong. This maps the row directly and is used by every caller:
+ * the feed, the crew page and the settlement service now cannot disagree.
+ */
+export function progressFromWeeklyStat(
+  kind: ChallengeKind,
+  stat: WeeklyStatLike | undefined,
+): number {
+  if (!stat) return 0;
+  switch (kind) {
+    case 'workout_count':
+      return Number(stat.workout_count ?? 0);
+    case 'total_volume':
+      return Number(stat.total_volume ?? 0);
+    case 'muscle_coverage':
+      return Number(stat.muscles_hit ?? 0);
+  }
+}

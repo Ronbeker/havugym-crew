@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { signOutAction } from '@/lib/actions/auth';
 import { CreatineIcon } from '@/components/icons';
 import { CrewSwitcher } from '@/components/crew-switcher';
+import { LeaveCrew } from './leave-crew';
 import {
   getActiveHavura, getCrewFeed, getMyHavuras, getProfile, getWallet,
 } from '@/lib/queries';
@@ -59,6 +60,16 @@ export default async function MePage() {
       </section>
 
       <CrewSwitcher memberships={memberships} activeId={havura.id} />
+
+      <section className="card" aria-labelledby="leave">
+        <h2 id="leave" className="text-xs font-semibold uppercase tracking-wide text-muted">
+          Leave a crew
+        </h2>
+        <p className="mt-1 mb-3 text-xs leading-relaxed text-muted">
+          Your sessions stay in the crew feed. You stop seeing theirs.
+        </p>
+        <LeaveCrew havuraId={havura.id} name={havura.name} isOwner={havura.role === 'owner'} />
+      </section>
 
       <section className="card" aria-labelledby="ledger">
         <h2 id="ledger" className="text-xs font-semibold uppercase tracking-wide text-muted">

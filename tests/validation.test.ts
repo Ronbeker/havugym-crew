@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  joinHavuraSchema, logWorkoutSchema, signUpSchema, workoutSetSchema,
+  displayNameSchema, emailSchema, joinHavuraSchema, logWorkoutSchema,
+  passwordSchema, signUpSchema, workoutSetSchema,
 } from '@/lib/validation/schemas';
 
 const validWorkout = {
@@ -127,5 +128,30 @@ describe('logWorkoutSchema', () => {
     if (!result.success) {
       expect(result.error.issues[0].path).toContain('title');
     }
+  });
+});
+
+describe('leaf schemas', () => {
+  it('emailSchema lower-cases and trims', () => {
+    expect(emailSchema.parse('  Ron@Example.COM  ')).toBe('ron@example.com');
+  });
+
+  it('emailSchema rejects an address with no domain', () => {
+    expect(emailSchema.safeParse('ron@').success).toBe(false);
+  });
+
+  it('passwordSchema enforces both ends of the range', () => {
+    expect(passwordSchema.safeParse('x'.repeat(7)).success).toBe(false);
+    expect(passwordSchema.safeParse('x'.repeat(8)).success).toBe(true);
+    expect(passwordSchema.safeParse('x'.repeat(72)).success).toBe(true);
+    expect(passwordSchema.safeParse('x'.repeat(73)).success).toBe(false);
+  });
+
+  it('displayNameSchema matches the column CHECK exactly', () => {
+    // profiles.display_name is CHECK (char_length between 2 and 32).
+    expect(displayNameSchema.safeParse('R').success).toBe(false);
+    expect(displayNameSchema.safeParse('Ro').success).toBe(true);
+    expect(displayNameSchema.safeParse('R'.repeat(32)).success).toBe(true);
+    expect(displayNameSchema.safeParse('R'.repeat(33)).success).toBe(false);
   });
 });

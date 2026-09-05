@@ -65,3 +65,15 @@ export function weekEndOf(weekStart: string): string {
   const end = new Date(Date.UTC(y, m - 1, d, 12) + 6 * 86_400_000);
   return iso(end.getUTCFullYear(), end.getUTCMonth() + 1, end.getUTCDate());
 }
+
+/**
+ * Day of the local week, 1 = Sunday … 7 = Saturday.
+ *
+ * Uses the same Intl path as weekStartOf rather than the tempting
+ * `new Date(d.toLocaleString('en-US', { timeZone }))` round-trip — that formats
+ * to a human string and re-parses it, which is locale-dependent, silently wrong
+ * in several runtimes, and produces an Invalid Date in a few.
+ */
+export function dayOfWeekOf(date: Date, timeZone: string = GYM_TIMEZONE): number {
+  return localParts(date, timeZone).weekday - WEEK_STARTS_ON + 1;
+}

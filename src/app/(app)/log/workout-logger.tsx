@@ -44,6 +44,7 @@ export function WorkoutLogger({
   const router = useRouter();
   const [entries, setEntries] = useState<DraftExercise[]>([]);
   const [duration, setDuration] = useState('60');
+  const [performedAtLocal, setPerformedAtLocal] = useState(() => toIsoLocal(new Date()));
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Exercise[]>([]);
   const [searching, startSearch] = useTransition();
@@ -56,6 +57,12 @@ export function WorkoutLogger({
     },
     null,
   );
+
+  /** Falls back to now when the field is cleared, rather than throwing. */
+  const performedAtIso = useMemo(() => {
+    const parsed = new Date(performedAtLocal);
+    return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+  }, [performedAtLocal]);
 
   /**
    * Live score preview, computed with the same formula the database uses.
@@ -131,22 +138,18 @@ export function WorkoutLogger({
             <label className="label" htmlFor="performedAt">When</label>
             <input
               id="performedAt"
-              name="performedAtLocal"
               type="datetime-local"
               className="field"
-              defaultValue={toIsoLocal(new Date())}
-              onChange={(e) => {
-                const hidden = document.getElementById('performedAt-iso') as HTMLInputElement;
-                if (hidden) hidden.value = new Date(e.target.value).toISOString();
-              }}
+              value={performedAtLocal}
+              onChange={(e) => setPerformedAtLocal(e.target.value)}
             />
-            {/* The server wants an absolute instant; datetime-local has no offset. */}
-            <input
-              id="performedAt-iso"
-              type="hidden"
-              name="performedAt"
-              defaultValue={new Date().toISOString()}
-            />
+            {/*
+              The server wants an absolute instant; datetime-local has no offset,
+              so the browser's own timezone converts it. Derived rather than
+              written into the DOM by hand — and guarded, because clearing the
+              field yields an empty string, and new Date('').toISOString() throws.
+            */}
+            <input type="hidden" name="performedAt" value={performedAtIso} />
           </div>
           <div>
             <label className="label" htmlFor="durationMin">Minutes</label>

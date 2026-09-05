@@ -5,9 +5,9 @@ import { LogIcon, TargetIcon } from '@/components/icons';
 import {
   getActiveHavura, getCrewFeed, getMuscleTouches, getProfile, getWeeklyStats,
 } from '@/lib/queries';
-import { challengeForWeek, challengeProgress } from '@/lib/domain/challenge';
+import { challengeForWeek, progressFromWeeklyStat } from '@/lib/domain/challenge';
 import { suggestNextSession } from '@/lib/domain/recommendation';
-import { weekStartOf, GYM_TIMEZONE } from '@/lib/domain/time';
+import { weekStartOf, dayOfWeekOf } from '@/lib/domain/time';
 
 export const metadata = { title: 'Feed · HavuGym Crew' };
 
@@ -29,29 +29,14 @@ export default async function FeedPage({
 
   const definition = challengeForWeek(weekStart);
   const mine = stats.find((s) => s.user_id === profile.id);
-  const progress = challengeProgress(definition.kind, [
-    {
-      volume: Number(mine?.total_volume ?? 0),
-      musclesHit: Array.from({ length: mine?.muscles_hit ?? 0 }, (_, i) => `m${i}`),
-    },
-  ]);
-  const countProgress = definition.kind === 'workout_count'
-    ? (mine?.workout_count ?? 0)
-    : progress;
-
-  // 1 = Sunday, matching the week's own start day.
-  const dayOfWeek =
-    new Date(
-      new Date().toLocaleString('en-US', { timeZone: GYM_TIMEZONE }),
-    ).getDay() + 1;
 
   const recommendation = suggestNextSession({
     touches,
     challenge: {
       kind: definition.kind,
       target: definition.target,
-      progress: countProgress,
-      dayOfWeek,
+      progress: progressFromWeeklyStat(definition.kind, mine),
+      dayOfWeek: dayOfWeekOf(new Date()),
     },
   });
 

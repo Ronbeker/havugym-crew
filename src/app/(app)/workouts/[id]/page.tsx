@@ -1,19 +1,21 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getWorkoutDetail } from '@/lib/queries';
+import { getProfile, getWorkoutDetail } from '@/lib/queries';
+import { WorkoutOwnerActions } from './workout-owner-actions';
 import { compactNumber, formatDay, formatTime, scoreBand } from '@/lib/format';
 
 export const metadata = { title: 'Session · HavuGym Crew' };
 
 export default async function WorkoutPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const detail = await getWorkoutDetail(id);
+  const [detail, profile] = await Promise.all([getWorkoutDetail(id), getProfile()]);
 
   // Not found and not permitted are the same response on purpose: a 403 would
   // confirm that a session with this id exists in somebody else's crew.
   if (!detail) notFound();
 
   const { workout, sets } = detail;
+  const isMine = profile?.id === workout.user_id;
   const score = Number(workout.score ?? 0);
   const band = scoreBand(score);
 
@@ -70,6 +72,8 @@ export default async function WorkoutPage({ params }: { params: Promise<{ id: st
           </div>
         </dl>
       </div>
+
+      {isMine && <WorkoutOwnerActions workoutId={workout.id!} />}
 
       {[...byExercise.entries()].map(([exerciseId, group]) => (
         <section key={exerciseId} className="card">

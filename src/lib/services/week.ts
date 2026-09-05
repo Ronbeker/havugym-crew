@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { challengeForWeek, isChallengeComplete } from '@/lib/domain/challenge';
+import { challengeForWeek, progressFromWeeklyStat } from '@/lib/domain/challenge';
 import { settleCompetition, type CompetitionEntry } from '@/lib/domain/competition';
 import { weekStartOf } from '@/lib/domain/time';
 import type { Database } from '@/lib/database.types';
@@ -43,7 +43,7 @@ export function metricForWeek(weekStart: string): CompetitionMetric {
  * page at the same moment cannot create two competitions: the second insert
  * loses the race and is ignored.
  */
-export async function ensureWeeks(havuraId: string, weekStarts: readonly string[]) {
+async function ensureWeeks(havuraId: string, weekStarts: readonly string[]) {
   if (weekStarts.length === 0) return;
   const admin = createAdminClient();
 
@@ -227,22 +227,8 @@ async function payChallengeRewards(havuraId: string, weekStart: string) {
   for (const stat of stats ?? []) {
     if (!stat.user_id) continue;
 
-    const workouts = [
-      {
-        volume: Number(stat.total_volume ?? 0),
-        // muscles_hit is already the distinct count for the week; the domain
-        // helper wants names, so a synthetic list of the right length is enough.
-        musclesHit: Array.from({ length: stat.muscles_hit ?? 0 }, (_, i) => `m${i}`),
-      },
-    ];
-    const repeated = Array.from({ length: stat.workout_count ?? 0 }, () => workouts[0]);
-    const complete = isChallengeComplete(
-      challenge.kind,
-      challenge.target,
-      challenge.kind === 'workout_count' ? repeated : workouts,
-    );
-
-    if (!complete) continue;
+    const progress = progressFromWeeklyStat(challenge.kind, stat);
+    if (progress < challenge.target) continue;
 
     const { data: existing } = await admin
       .from('challenge_progress')
@@ -265,7 +251,8 @@ async function payChallengeRewards(havuraId: string, weekStart: string) {
       {
         challenge_id: challenge.id,
         user_id: stat.user_id,
-        value: Number(stat.total_volume ?? 0),
+        // The value that actually met the target, whichever metric it was.
+        value: progress,
         completed_at: new Date().toISOString(),
         paid_at: new Date().toISOString(),
       },

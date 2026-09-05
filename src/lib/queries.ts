@@ -71,13 +71,41 @@ export async function getActiveHavura(): Promise<HavuraMembership | null> {
   return memberships.find((m) => m.id === preferred) ?? memberships[0];
 }
 
+/** Opaque feed cursor: the timestamp AND id of the last row on the page. */
+export interface FeedCursor {
+  performedAt: string;
+  id: string;
+}
+
+export const encodeCursor = (c: FeedCursor): string => `${c.performedAt}|${c.id}`;
+
+export function decodeCursor(raw: string | undefined): FeedCursor | null {
+  if (!raw) return null;
+  const separator = raw.lastIndexOf('|');
+  if (separator < 1) return null;
+  const performedAt = raw.slice(0, separator);
+  const id = raw.slice(separator + 1);
+  // A malformed cursor means "start from the top", never an error page.
+  if (!performedAt || !id) return null;
+  return { performedAt, id };
+}
+
 /**
- * Crew feed, newest first, KEYSET paginated.
+ * Crew feed, newest first, KEYSET paginated on (performed_at, id).
  *
- * Deliberately not `.range(offset, offset+n)`: OFFSET makes Postgres walk and
- * discard every skipped row, so page 50 costs fifty pages of work. Seeking on
- * performed_at uses the (havura_id, performed_at desc) index directly, and costs
- * the same on page 50 as on page 1.
+ * Not `.range(offset, offset + n)`: OFFSET makes Postgres generate and discard
+ * every skipped row, so page 50 costs fifty pages of work. A seek costs the same
+ * on page 50 as on page 1.
+ *
+ * The cursor is a PAIR, not just the timestamp. Two members finishing a session
+ * in the same minute produce identical performed_at values, and a cursor of
+ * `performed_at < last` would then skip every row sharing that instant — the
+ * classic keyset off-by-a-tie. The compound comparison
+ *
+ *     performed_at < ts  OR  (performed_at = ts AND id < id)
+ *
+ * is total over (performed_at, id), which is unique because id is. Ordering by
+ * both columns matches the index added in 0010, so the seek stays a range scan.
  */
 export async function getCrewFeed(
   havuraId: string,
@@ -85,24 +113,35 @@ export async function getCrewFeed(
 ): Promise<{ rows: FeedRow[]; nextCursor: string | null }> {
   const limit = Math.min(options.limit ?? 20, 50);
   const supabase = await createSupabaseServerClient();
+  const cursor = decodeCursor(options.before);
 
   let query = supabase
     .from('workout_feed')
     .select('*')
     .eq('havura_id', havuraId)
     .order('performed_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(limit + 1);
 
-  if (options.before) query = query.lt('performed_at', options.before);
+  if (cursor) {
+    query = query.or(
+      `performed_at.lt.${cursor.performedAt},` +
+        `and(performed_at.eq.${cursor.performedAt},id.lt.${cursor.id})`,
+    );
+  }
 
   const { data } = await query;
   const rows = data ?? [];
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;
+  const last = page[page.length - 1];
 
   return {
     rows: page,
-    nextCursor: hasMore ? (page[page.length - 1]?.performed_at ?? null) : null,
+    nextCursor:
+      hasMore && last?.performed_at && last?.id
+        ? encodeCursor({ performedAt: last.performed_at, id: last.id })
+        : null,
   };
 }
 

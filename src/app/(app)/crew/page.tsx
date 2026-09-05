@@ -4,7 +4,7 @@ import { InviteCode } from '@/components/invite-code';
 import {
   getActiveHavura, getCrewRoster, getWeeklyStats,
 } from '@/lib/queries';
-import { challengeForWeek } from '@/lib/domain/challenge';
+import { challengeForWeek, progressFromWeeklyStat } from '@/lib/domain/challenge';
 import { settleCompetition, type CompetitionEntry } from '@/lib/domain/competition';
 import { weekStartOf, weekEndOf } from '@/lib/domain/time';
 import { ensureActivityWeeks, settleDueWeeks, metricForWeek, COMPETITION_POT } from '@/lib/services/week';
@@ -54,13 +54,8 @@ export default async function CrewPage() {
   const standings = settleCompetition(entries, COMPETITION_POT);
   const names = new Map(roster.map((m) => [m.user_id, m.profiles?.display_name ?? 'Unknown']));
 
-  const challengeValue = (userId: string) => {
-    const stat = byUser.get(userId);
-    if (!stat) return 0;
-    if (definition.kind === 'workout_count') return Number(stat.workout_count ?? 0);
-    if (definition.kind === 'muscle_coverage') return Number(stat.muscles_hit ?? 0);
-    return Number(stat.total_volume ?? 0);
-  };
+  const challengeValue = (userId: string) =>
+    progressFromWeeklyStat(definition.kind, byUser.get(userId));
 
   return (
     <div className="space-y-5">
