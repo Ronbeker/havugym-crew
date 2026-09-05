@@ -185,11 +185,18 @@
   },
   "active": "7224884148c22a1e",
   "lastOpenFiles": [
-    "tests/arrival.integration.test.ts",
-    "tests/arrival.test.ts",
-    "src/app/(app)/feed/arrival-banner.tsx",
-    "src/lib/actions/arrival.ts",
-    "src/lib/domain/arrival.ts",
-    "supabase/migrations/0011_arrivals.sql"
+    "havugym-crew-submission.zip",
+    "ziKzgRGt",
+    "scripts/package-submission.sh",
+    "submission-pdf/05-security.pdf",
+    "submission-pdf/04-scale.pdf",
+    "submission-pdf/03-test-spec.pdf",
+    "submission-pdf/02-technical-design.pdf",
+    "submission-pdf/01-product-spec.pdf",
+    "submission-pdf",
+    "scripts/build-submission.mjs",
+    "node_modules/marked/man/marked.1.md",
+    "node_modules/marked/man/marked.1",
+    "node_modules/marked/README.md"
   ]
 }

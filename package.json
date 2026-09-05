@@ -15,7 +15,9 @@
     "db:reset": "supabase db reset",
     "db:verify": "node scripts/verify-db.mjs",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:all": "npm run test && npm run test:integration && npm run test:e2e"
+    "test:all": "npm run test && npm run test:integration && npm run test:e2e",
+    "build:submission": "node scripts/build-submission.mjs",
+    "package": "bash scripts/package-submission.sh"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
@@ -42,6 +44,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
     "jsdom": "^29.1.1",
+    "marked": "^18.0.11",
     "pg": "^8.23.0",
     "supabase": "^2.116.0",
     "tailwindcss": "^4",

@@ -46,3 +46,6 @@ next-env.d.ts
 
 test-results/
 playwright-report/
+
+# build artefact of `npm run package`
+havugym-crew-submission.zip

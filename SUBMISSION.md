@@ -46,10 +46,33 @@
 | 7 | מסמך סקייל בסיסי | [`docs/04-scale.md`](./docs/04-scale.md) |
 | 8 | מסמך אבטחה בסיסית | [`docs/05-security.md`](./docs/05-security.md) |
 | 9 | הוראות הרצה מקומית | [`README.md`](./README.md) · וגם למטה |
-| 10 | מצגת (10–15 דקות) | [`docs/presentation.html`](./docs/presentation.html) |
 | — | מסמך פנימי (סעיף 11, מומלץ בבריף) | [`docs/explainer.html`](./docs/explainer.html) |
 
-שני קבצי ה-HTML נפתחים בכל דפדפן. המצגת מונעת במקלדת: חיצים או רווח להתקדמות, `Home` / `End` לקפיצה.
+**המצגת בוטלה על ידי המרצה.** הקובץ [`docs/presentation.html`](./docs/presentation.html) נשאר
+בחבילה כתוספת בלבד ואינו חלק מההגשה הנדרשת.
+
+חמשת המסמכים מצורפים גם כ-**PDF** בתיקייה `submission-pdf/`, כדי שייקראו כמו שצריך בלי
+צופה Markdown. המקור ב-`docs/` הוא הגרסה הקנונית.
+
+---
+
+## מבנה החבילה
+
+```
+havugym-crew/
+├── SUBMISSION.md        ← המסמך הזה
+├── README.md            ← הוראות הרצה ומשתני סביבה
+├── submission-pdf/      ← חמשת המסמכים המוגשים, כ-PDF
+├── docs/                ← מקור המסמכים (Markdown) + המסמך הפנימי (HTML)
+├── src/                 ← קוד האפליקציה
+├── supabase/migrations/ ← 11 מיגרציות, לפי הסדר
+├── tests/               ← 110 unit + 46 integration
+├── e2e/                 ← 8 בדיקות מקצה לקצה
+└── scripts/             ← seed לדמו, אימות סכמה
+```
+
+`node_modules`, `.next` ו-`.env.local` אינם בחבילה. הראשונים נוצרים ב-`npm install`,
+והאחרון מכיל סודות ולעולם אינו נשלח.
 
 ---
 
